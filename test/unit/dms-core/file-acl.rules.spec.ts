@@ -40,7 +40,9 @@ describe('file-acl.rules — สิทธิ์ระดับไฟล์ทั
   it('มี entry ที่ให้สิทธิ์ลบ (หรือ Modify/FullControl) → ผ่าน', () => {
     for (const over of [{ canDelete: true }, { canModify: true }, { canFullControl: true }]) {
       expect(
-        fileOverrideBlocks(fileAclDecision({ subject: me, perm: 'Delete', entries: [entry(over)] })),
+        fileOverrideBlocks(
+          fileAclDecision({ subject: me, perm: 'Delete', entries: [entry(over)] }),
+        ),
       ).toBe(false);
     }
   });
@@ -63,9 +65,9 @@ describe('file-acl.rules — สิทธิ์ระดับไฟล์ทั
     ];
     expect(fileAclDecision({ subject: me, perm: 'Read', entries }).allowed).toBe(true);
     expect(fileAclDecision({ subject: me, perm: 'Delete', entries }).allowed).toBe(true);
-    expect(fileAclDecision({ subject: { ...me, departmentId: null }, perm: 'Delete', entries }).allowed).toBe(
-      false,
-    );
+    expect(
+      fileAclDecision({ subject: { ...me, departmentId: null }, perm: 'Delete', entries }).allowed,
+    ).toBe(false);
   });
 });
 
@@ -79,7 +81,10 @@ describe('file-acl.rules — ตัดสินสิทธิ์ดาวน์
   };
 
   it('Manager/Admin ผ่านทันที (ถ้าอ่านได้)', () => {
-    expect(decideDownload({ ...base, isPrivileged: true })).toEqual({ allowed: true, via: 'PRIVILEGED' });
+    expect(decideDownload({ ...base, isPrivileged: true })).toEqual({
+      allowed: true,
+      via: 'PRIVILEGED',
+    });
   });
 
   it('Authority.CanDownload ผ่าน', () => {

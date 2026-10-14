@@ -73,9 +73,16 @@ describe('approval-payload — CHANGE_PERMISSION', () => {
 
   it('รูปแบบ Remark เดิมแบบ "Key:Value Key:Value"', () => {
     const r = parseLegacyRemark('PrincipalType:1 PrincipalID:5 Read:True Write:False IsDeny:False');
-    expect(r).toEqual({ PrincipalType: '1', PrincipalID: '5', Read: 'True', Write: 'False', IsDeny: 'False' });
+    expect(r).toEqual({
+      PrincipalType: '1',
+      PrincipalID: '5',
+      Read: 'True',
+      Write: 'False',
+      IsDeny: 'False',
+    });
     const p = parseChangePermissionPayload({
-      remark: 'PrincipalType:1 PrincipalID:5 Read:True Write:True Delete:False Modify:False FullControl:False IsDeny:True',
+      remark:
+        'PrincipalType:1 PrincipalID:5 Read:True Write:True Delete:False Modify:False FullControl:False IsDeny:True',
     });
     expect(p).toMatchObject({
       principalType: PrincipalType.User,
@@ -92,7 +99,9 @@ describe('approval-payload — CHANGE_PERMISSION', () => {
     expect(code(() => parseChangePermissionPayload({ principalType: 5, principalId: 1 }))).toBe(
       'APPROVAL_PAYLOAD_INVALID',
     );
-    expect(code(() => parseChangePermissionPayload({ principalType: 1 }))).toBe('APPROVAL_PAYLOAD_INVALID');
+    expect(code(() => parseChangePermissionPayload({ principalType: 1 }))).toBe(
+      'APPROVAL_PAYLOAD_INVALID',
+    );
     expect(code(() => parseChangePermissionPayload(undefined))).toBe('APPROVAL_PAYLOAD_INVALID');
   });
 });

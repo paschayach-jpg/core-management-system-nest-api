@@ -1,5 +1,13 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
@@ -83,7 +91,12 @@ describe('FileStorageService (ใช้ temp dir จริง)', () => {
 
     it('candidatePaths: StoredFileName ที่ไม่ปลอดภัยไม่ได้เป็นตำแหน่งที่เป็นไปได้', () => {
       expect(
-        svc.candidatePaths({ orgUnitId: 1, folderId: 1, storedFileName: '../../x', physicalPath: null }),
+        svc.candidatePaths({
+          orgUnitId: 1,
+          folderId: 1,
+          storedFileName: '../../x',
+          physicalPath: null,
+        }),
       ).toEqual([]);
     });
   });
@@ -191,15 +204,21 @@ describe('FileStorageService (ใช้ temp dir จริง)', () => {
       await svc.copy(from, to);
       expect(readFileSync(to, 'utf8')).toBe('AAA');
       expect(existsSync(from)).toBe(true);
-      await expect(svc.copy(from, to)).rejects.toMatchObject({ response: { code: 'STORAGE_COPY_FAILED' } });
+      await expect(svc.copy(from, to)).rejects.toMatchObject({
+        response: { code: 'STORAGE_COPY_FAILED' },
+      });
     });
 
     it('withIntegrityCheck: ตรวจ SHA-256 ระหว่างส่ง แจ้งผลเมื่อจบ', async () => {
       const data = Buffer.from('integrity');
       const results: boolean[] = [];
-      const good = svc.withIntegrityCheck(Readable.from([data]), sha256(data), (r) => results.push(r.ok));
+      const good = svc.withIntegrityCheck(Readable.from([data]), sha256(data), (r) =>
+        results.push(r.ok),
+      );
       expect((await drain(good)).equals(data)).toBe(true);
-      const bad = svc.withIntegrityCheck(Readable.from([data]), sha256('อื่น'), (r) => results.push(r.ok));
+      const bad = svc.withIntegrityCheck(Readable.from([data]), sha256('อื่น'), (r) =>
+        results.push(r.ok),
+      );
       await drain(bad);
       expect(results).toEqual([true, false]);
     });
@@ -215,7 +234,12 @@ describe('FileStorageService (ใช้ temp dir จริง)', () => {
       expect(existsSync(p1) || existsSync(p2)).toBe(false);
       await crud.service.drain();
       const ev = crud.sink.events.find((e) => e.operation === 'DELETE_PHYSICAL_FILE');
-      expect(ev).toMatchObject({ module: 'DMS', entity: 'PhysicalFile', action: 'DELETE', success: true });
+      expect(ev).toMatchObject({
+        module: 'DMS',
+        entity: 'PhysicalFile',
+        action: 'DELETE',
+        success: true,
+      });
       expect(ev?.meta).toMatchObject({ reason: 'test', files: 3, deleted: 2 });
     });
 

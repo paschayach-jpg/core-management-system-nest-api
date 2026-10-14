@@ -1,11 +1,22 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { createHash } from 'node:crypto';
 import { PrincipalType } from '../../../src/common/constants/enums';
 import { BusinessException } from '../../../src/common/exceptions/business.exception';
-import { DmsFilePortAdapter, DmsFileUncheckedAdapter } from '../../../src/modules/dms/core/files/dms-file-port.adapter';
+import {
+  DmsFilePortAdapter,
+  DmsFileUncheckedAdapter,
+} from '../../../src/modules/dms/core/files/dms-file-port.adapter';
 import { FilesService, type UploadSource } from '../../../src/modules/dms/core/files/files.service';
 import { FoldersService } from '../../../src/modules/dms/core/folders/folders.service';
 import type { FileAclEntry } from '../../../src/modules/dms/core/rules/file-acl.rules';
@@ -53,10 +64,35 @@ function make(opts: Opts = {}) {
   const folderRepo = new FakeFolderRepo(
     opts.folders ?? [
       folderRow({ folderId: 1, folderName: '2SC - A', confidentialityLevel: 2, folderDepth: 1 }),
-      folderRow({ folderId: 10, folderName: 'เอกสาร', parentFolderId: 1, confidentialityLevel: 2, folderDepth: 2 }),
-      folderRow({ folderId: 11, folderName: 'ปลายทาง', parentFolderId: 1, confidentialityLevel: 2, folderDepth: 2 }),
-      folderRow({ folderId: 20, folderName: '3NC - B', confidentialityLevel: 3, folderDepth: 1, orgUnitId: 2 }),
-      folderRow({ folderId: 21, folderName: 'ข้ามหน่วยงาน', parentFolderId: 20, confidentialityLevel: 3, folderDepth: 2, orgUnitId: 2 }),
+      folderRow({
+        folderId: 10,
+        folderName: 'เอกสาร',
+        parentFolderId: 1,
+        confidentialityLevel: 2,
+        folderDepth: 2,
+      }),
+      folderRow({
+        folderId: 11,
+        folderName: 'ปลายทาง',
+        parentFolderId: 1,
+        confidentialityLevel: 2,
+        folderDepth: 2,
+      }),
+      folderRow({
+        folderId: 20,
+        folderName: '3NC - B',
+        confidentialityLevel: 3,
+        folderDepth: 1,
+        orgUnitId: 2,
+      }),
+      folderRow({
+        folderId: 21,
+        folderName: 'ข้ามหน่วยงาน',
+        parentFolderId: 20,
+        confidentialityLevel: 3,
+        folderDepth: 2,
+        orgUnitId: 2,
+      }),
     ],
   );
   const fileRepo = new FakeFileRepo(opts.files ?? []);
@@ -94,7 +130,11 @@ function make(opts: Opts = {}) {
   return { svc, storage, folderRepo, fileRepo, aclRepo, tx, crud, folders, gate };
 }
 
-const source = (name: string, data: Buffer | string, extra: Partial<UploadSource> = {}): UploadSource => {
+const source = (
+  name: string,
+  data: Buffer | string,
+  extra: Partial<UploadSource> = {},
+): UploadSource => {
   const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
   return {
     originalName: name,
@@ -132,7 +172,12 @@ describe('FilesService.upload', () => {
     const res = await svc.upload(manager(), 10, [src]);
 
     expect(res).toMatchObject({ successCount: 1, failureCount: 0 });
-    expect(res.items[0]).toMatchObject({ success: true, actualName: 'รายงาน.pdf', isDuplicate: false, version: 1 });
+    expect(res.items[0]).toMatchObject({
+      success: true,
+      actualName: 'รายงาน.pdf',
+      isDuplicate: false,
+      version: 1,
+    });
 
     const row = fileRepo.rows[0];
     expect(row).toMatchObject({
@@ -149,12 +194,23 @@ describe('FilesService.upload', () => {
     expect(disk[0]).toContain(join(root, '1', '10'));
     expect(readFileSync(disk[0]).equals(data)).toBe(true);
     expect(row.storedFileName).not.toBe('รายงาน.pdf'); // ไม่ใช้ชื่อผู้ใช้เป็นชื่อไฟล์จริง
-    expect(aclRepo.copyFolderPermissionsToFile).toHaveBeenCalledWith(10, row.fileId, manager().userId, tx.scope);
+    expect(aclRepo.copyFolderPermissionsToFile).toHaveBeenCalledWith(
+      10,
+      row.fileId,
+      manager().userId,
+      tx.scope,
+    );
     expect(folderRepo.called('refreshCounters')[0].args[0]).toEqual([10]);
     expect(src.dispose).toHaveBeenCalled();
 
     const ev = (await logEvents(crud)).find((e) => e.operation === 'UPLOAD_FILE');
-    expect(ev).toMatchObject({ module: 'DMS', entity: 'FileDocument', action: 'CREATE', success: true, recordId: row.fileId });
+    expect(ev).toMatchObject({
+      module: 'DMS',
+      entity: 'FileDocument',
+      action: 'CREATE',
+      success: true,
+      recordId: row.fileId,
+    });
   });
 
   it('ชื่อซ้ำ → ตั้งเป็น "name copy(N).ext" และรายงาน isDuplicate', async () => {
@@ -163,16 +219,27 @@ describe('FilesService.upload', () => {
     expect(r1.items[0]).toMatchObject({ actualName: 'a copy(1).pdf', isDuplicate: true });
     const r2 = await svc.upload(manager(), 10, [source('a.pdf', 'y')]);
     expect(r2.items[0].actualName).toBe('a copy(2).pdf');
-    expect(fileRepo.rows.map((r) => r.originalFileName)).toEqual(['a.pdf', 'a copy(1).pdf', 'a copy(2).pdf']);
+    expect(fileRepo.rows.map((r) => r.originalFileName)).toEqual([
+      'a.pdf',
+      'a copy(1).pdf',
+      'a copy(2).pdf',
+    ]);
   });
 
   it('overwriteExisting: ชื่อเดิม + Version+1 และ soft delete แถวเก่า "หลัง" แถวใหม่บันทึก', async () => {
-    const { svc, fileRepo } = make({ files: [fileRow({ fileId: 1, originalFileName: 'a.pdf', version: 3 })] });
-    const res = await svc.upload(manager(), 10, [source('a.pdf', 'ใหม่')], { overwriteExisting: true });
+    const { svc, fileRepo } = make({
+      files: [fileRow({ fileId: 1, originalFileName: 'a.pdf', version: 3 })],
+    });
+    const res = await svc.upload(manager(), 10, [source('a.pdf', 'ใหม่')], {
+      overwriteExisting: true,
+    });
     expect(res.items[0]).toMatchObject({ actualName: 'a.pdf', version: 4, isDuplicate: false });
     expect(fileRepo.order.indexOf('insert')).toBeLessThan(fileRepo.order.indexOf('softDelete'));
     expect(fileRepo.rows.find((r) => r.fileId === 1)?.fileStatus).toBe(3);
-    expect(fileRepo.rows.find((r) => r.fileId !== 1)).toMatchObject({ originalFileName: 'a.pdf', version: 4 });
+    expect(fileRepo.rows.find((r) => r.fileId !== 1)).toMatchObject({
+      originalFileName: 'a.pdf',
+      version: 4,
+    });
   });
 
   it('ชนิดไฟล์ไม่อนุญาต/เกิน 100MB: รายงานรายไฟล์ ไม่กระทบไฟล์อื่นในชุดเดียวกัน', async () => {
@@ -198,7 +265,9 @@ describe('FilesService.upload', () => {
   it('ค่า STORAGE_MAX_UPLOAD_MB ที่ต่ำกว่า 100 MB ถูกใช้เป็นเพดาน', async () => {
     const { svc } = make({ maxMb: 1 });
     expect(svc.maxUploadBytes).toBe(1024 * 1024);
-    const res = await svc.upload(manager(), 10, [source('a.pdf', 'x', { sizeBytes: 2 * 1024 * 1024 })]);
+    const res = await svc.upload(manager(), 10, [
+      source('a.pdf', 'x', { sizeBytes: 2 * 1024 * 1024 }),
+    ]);
     expect(res.items[0].errorCode).toBe('FILE_TOO_LARGE');
   });
 
@@ -241,8 +310,15 @@ describe('FilesService.upload', () => {
   });
 
   it('overwrite: โควตานับเฉพาะส่วนที่เพิ่มขึ้น (ขนาดใหม่ − ขนาดไฟล์เดิม)', async () => {
-    const quota = { validateBatch: jest.fn(async () => undefined), enforceQuota: jest.fn(), sendAlertIfNeeded: jest.fn(async () => undefined) };
-    const { svc } = make({ quota, files: [fileRow({ fileId: 1, originalFileName: 'a.pdf', fileSizeBytes: '4' })] });
+    const quota = {
+      validateBatch: jest.fn(async () => undefined),
+      enforceQuota: jest.fn(),
+      sendAlertIfNeeded: jest.fn(async () => undefined),
+    };
+    const { svc } = make({
+      quota,
+      files: [fileRow({ fileId: 1, originalFileName: 'a.pdf', fileSizeBytes: '4' })],
+    });
     await svc.upload(manager(), 10, [source('a.pdf', '1234567890')], { overwriteExisting: true });
     expect(quota.validateBatch).toHaveBeenCalledWith(1, [6]);
     expect(quota.sendAlertIfNeeded).toHaveBeenCalledWith(1);
@@ -250,7 +326,9 @@ describe('FilesService.upload', () => {
 
   it('ไม่มีสิทธิ์เพิ่มในโฟลเดอร์ → 403 และไม่เขียนอะไร · โฟลเดอร์ถูกลบ/เก็บถาวร → 422 · ไม่พบ → 404', async () => {
     const a = make({ rule: () => false });
-    expect(await errorCode(a.svc.upload(officer(), 10, [source('a.pdf', 'x')]))).toBe('FOLDER_ADD_DENIED');
+    expect(await errorCode(a.svc.upload(officer(), 10, [source('a.pdf', 'x')]))).toBe(
+      'FOLDER_ADD_DENIED',
+    );
     expect(filesOnDisk()).toHaveLength(0);
 
     const folders = [
@@ -259,8 +337,12 @@ describe('FilesService.upload', () => {
       folderRow({ folderId: 11, parentFolderId: 1, isArchived: true, folderDepth: 2 }),
     ];
     const b = make({ folders });
-    expect(await errorCode(b.svc.upload(manager(), 10, [source('a.pdf', 'x')]))).toBe('FOLDER_DELETED');
-    expect(await errorCode(b.svc.upload(manager(), 11, [source('a.pdf', 'x')]))).toBe('FOLDER_ARCHIVED');
+    expect(await errorCode(b.svc.upload(manager(), 10, [source('a.pdf', 'x')]))).toBe(
+      'FOLDER_DELETED',
+    );
+    expect(await errorCode(b.svc.upload(manager(), 11, [source('a.pdf', 'x')]))).toBe(
+      'FOLDER_ARCHIVED',
+    );
     expect(await errorStatus(b.svc.upload(manager(), 999, [source('a.pdf', 'x')]))).toBe(404);
   });
 
@@ -283,14 +365,27 @@ describe('FilesService — ดาวน์โหลด', () => {
   it('Manager/Admin ดาวน์โหลดได้ทันที และบันทึก EXECUTE DOWNLOAD_FILE', async () => {
     const { svc, fileId, data, crud } = await withStoredFile();
     const h = await svc.openDownload(manager(), fileId);
-    expect(h).toMatchObject({ fileName: 'secret.pdf', mimeType: 'application/pdf', sizeBytes: data.length });
+    expect(h).toMatchObject({
+      fileName: 'secret.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: data.length,
+    });
     expect((await drain(h.stream)).equals(data)).toBe(true);
     const ev = (await logEvents(crud)).find((e) => e.operation === 'DOWNLOAD_FILE');
-    expect(ev).toMatchObject({ action: 'EXECUTE', entity: 'FileDocument', recordId: fileId, success: true });
+    expect(ev).toMatchObject({
+      action: 'EXECUTE',
+      entity: 'FileDocument',
+      recordId: fileId,
+      success: true,
+    });
   });
 
   it('ผู้ใช้ทั่วไปที่อ่านได้แต่ไม่มี CanDownload และมีระบบอนุมัติ → 403 DOWNLOAD_APPROVAL_REQUIRED', async () => {
-    const approvals = { findApprovedDownload: jest.fn(async () => null), consumeDownload: jest.fn(), submit: jest.fn() };
+    const approvals = {
+      findApprovedDownload: jest.fn(async () => null),
+      consumeDownload: jest.fn(),
+      submit: jest.fn(),
+    };
     const { svc, fileId, crud } = await withStoredFile({ approvals });
     const u = officer({ authority: { 2: { ...fullAuthority()![2], canDownload: false } } });
     const p = svc.openDownload(u, fileId);
@@ -306,7 +401,10 @@ describe('FilesService — ดาวน์โหลด', () => {
     const { svc, fileId } = await withStoredFile();
     const u = officer({ authority: { 2: { ...fullAuthority()![2], canDownload: false } } });
     const e = await svc.openDownload(u, fileId).catch((x) => x);
-    expect(e.getResponse()).toMatchObject({ code: 'DOWNLOAD_DENIED', details: { canRequestApproval: false } });
+    expect(e.getResponse()).toMatchObject({
+      code: 'DOWNLOAD_DENIED',
+      details: { canRequestApproval: false },
+    });
   });
 
   it('มีใบอนุมัติที่อนุมัติแล้ว → ดาวน์โหลดได้ และใช้สิทธิ์ (consume) เพียงครั้งเดียว', async () => {
@@ -337,7 +435,11 @@ describe('FilesService — ดาวน์โหลด', () => {
   });
 
   it('Authority.CanDownload ของชั้นความลับ → ดาวน์โหลดได้โดยไม่ต้องเรียกระบบอนุมัติ', async () => {
-    const approvals = { findApprovedDownload: jest.fn(), consumeDownload: jest.fn(), submit: jest.fn() };
+    const approvals = {
+      findApprovedDownload: jest.fn(),
+      consumeDownload: jest.fn(),
+      submit: jest.fn(),
+    };
     const { svc, fileId } = await withStoredFile({ approvals });
     const h = await svc.openDownload(officer({ authority: fullAuthority() }), fileId);
     await drain(h.stream);
@@ -346,8 +448,16 @@ describe('FilesService — ดาวน์โหลด', () => {
 
   it('สิทธิ์ระดับไฟล์ที่ให้ CanDownload ผ่านได้', async () => {
     const entry: FileAclEntry = {
-      fileId: 1, principalType: PrincipalType.User, principalId: officer().userId,
-      canRead: true, canWrite: false, canDelete: false, canModify: false, canFullControl: false, canDownload: true, isDeny: false,
+      fileId: 1,
+      principalType: PrincipalType.User,
+      principalId: officer().userId,
+      canRead: true,
+      canWrite: false,
+      canDelete: false,
+      canModify: false,
+      canFullControl: false,
+      canDownload: true,
+      isDeny: false,
     };
     const { svc, fileId } = await withStoredFile({ entries: [entry] });
     const h = await svc.openDownload(officer(), fileId);
@@ -356,8 +466,16 @@ describe('FilesService — ดาวน์โหลด', () => {
 
   it('ถูก Deny ระดับไฟล์ → 403 FILE_PERMISSION_DENIED แม้เป็น Admin', async () => {
     const entry: FileAclEntry = {
-      fileId: 1, principalType: PrincipalType.Role, principalId: manager().appRole,
-      canRead: true, canWrite: false, canDelete: false, canModify: false, canFullControl: false, canDownload: false, isDeny: true,
+      fileId: 1,
+      principalType: PrincipalType.Role,
+      principalId: manager().appRole,
+      canRead: true,
+      canWrite: false,
+      canDelete: false,
+      canModify: false,
+      canFullControl: false,
+      canDownload: false,
+      isDeny: true,
     };
     const { svc, fileId } = await withStoredFile({ entries: [entry] });
     expect(await errorCode(svc.openDownload(manager(), fileId))).toBe('FILE_PERMISSION_DENIED');
@@ -405,8 +523,12 @@ describe('FilesService — ดาวน์โหลด', () => {
     const { svc } = make({
       files: [
         fileRow({
-          fileId: 300, folderId: 10, storedFileName: 'legacy.pdf', fileSizeBytes: String(Buffer.byteLength('เก่า')),
-          physicalPath: '\\\\server\\share\\7\\8\\legacy.pdf', checksum: sha('เก่า'),
+          fileId: 300,
+          folderId: 10,
+          storedFileName: 'legacy.pdf',
+          fileSizeBytes: String(Buffer.byteLength('เก่า')),
+          physicalPath: '\\\\server\\share\\7\\8\\legacy.pdf',
+          checksum: sha('เก่า'),
         }),
       ],
     });
@@ -415,13 +537,31 @@ describe('FilesService — ดาวน์โหลด', () => {
   });
 
   it('downloadAccess บอกว่าดาวน์โหลดได้ทันที / ต้องขออนุมัติ / มีใบอนุมัติแล้ว', async () => {
-    const approvals = { findApprovedDownload: jest.fn(async () => null), consumeDownload: jest.fn(), submit: jest.fn() };
+    const approvals = {
+      findApprovedDownload: jest.fn(async () => null),
+      consumeDownload: jest.fn(),
+      submit: jest.fn(),
+    };
     const { svc, fileId } = await withStoredFile({ approvals });
-    expect(await svc.downloadAccess(manager(), fileId)).toEqual({ canDownload: true, requiresApproval: false, via: 'PRIVILEGED' });
+    expect(await svc.downloadAccess(manager(), fileId)).toEqual({
+      canDownload: true,
+      requiresApproval: false,
+      via: 'PRIVILEGED',
+    });
     const u = officer({ authority: { 2: { ...fullAuthority()![2], canDownload: false } } });
-    expect(await svc.downloadAccess(u, fileId)).toMatchObject({ canDownload: false, requiresApproval: true });
-    approvals.findApprovedDownload.mockResolvedValueOnce({ requestId: 5, requestStatus: 2 } as never);
-    expect(await svc.downloadAccess(u, fileId)).toMatchObject({ canDownload: true, via: 'APPROVAL', approvedRequestId: 5 });
+    expect(await svc.downloadAccess(u, fileId)).toMatchObject({
+      canDownload: false,
+      requiresApproval: true,
+    });
+    approvals.findApprovedDownload.mockResolvedValueOnce({
+      requestId: 5,
+      requestStatus: 2,
+    } as never);
+    expect(await svc.downloadAccess(u, fileId)).toMatchObject({
+      canDownload: true,
+      via: 'APPROVAL',
+      approvedRequestId: 5,
+    });
   });
 });
 
@@ -436,8 +576,12 @@ describe('FilesService — เปลี่ยนชื่อ / ลบ / กู�
     expect((await svc.rename(manager(), 1, 'ใหม่.pdf')).originalFileName).toBe('ใหม่.pdf');
     expect(fileRepo.called('rename')[0].args).toEqual([1, 'ใหม่.pdf']);
     expect(await errorCode(svc.rename(manager(), 1, 'b.pdf'))).toBe('FILE_NAME_DUPLICATE');
-    expect(await errorCode(svc.rename(manager(), 1, 'x.exe'))).toBe('FILE_EXTENSION_CHANGE_NOT_ALLOWED');
-    expect(await errorCode(svc.rename(manager(), 1, 'ไม่มีนามสกุล'))).toBe('FILE_EXTENSION_CHANGE_NOT_ALLOWED');
+    expect(await errorCode(svc.rename(manager(), 1, 'x.exe'))).toBe(
+      'FILE_EXTENSION_CHANGE_NOT_ALLOWED',
+    );
+    expect(await errorCode(svc.rename(manager(), 1, 'ไม่มีนามสกุล'))).toBe(
+      'FILE_EXTENSION_CHANGE_NOT_ALLOWED',
+    );
     expect(await errorCode(svc.rename(manager(), 1, '../x.pdf'))).toBe('FILE_NAME_INVALID');
   });
 
@@ -462,8 +606,16 @@ describe('FilesService — เปลี่ยนชื่อ / ลบ / กู�
 
   it('ลบ: สิทธิ์ระดับไฟล์ที่ไม่ให้สิทธิ์ลบทับสิทธิ์โฟลเดอร์ (รวม Manager)', async () => {
     const entry: FileAclEntry = {
-      fileId: 1, principalType: PrincipalType.User, principalId: manager().userId,
-      canRead: true, canWrite: false, canDelete: false, canModify: false, canFullControl: false, canDownload: false, isDeny: false,
+      fileId: 1,
+      principalType: PrincipalType.User,
+      principalId: manager().userId,
+      canRead: true,
+      canWrite: false,
+      canDelete: false,
+      canModify: false,
+      canFullControl: false,
+      canDownload: false,
+      isDeny: false,
     };
     const { svc, fileRepo } = make({ files: base(), entries: [entry] });
     expect(await errorCode(svc.remove(manager(), 1))).toBe('FILE_PERMISSION_DENIED');
@@ -479,11 +631,20 @@ describe('FilesService — เปลี่ยนชื่อ / ลบ / กู�
     const a = make({ files: base() });
     expect(await errorCode(a.svc.restore(manager(), 1))).toBe('FILE_NOT_DELETED');
 
-    const deleted = fileRow({ fileId: 5, folderId: 10, originalFileName: 'd.pdf', fileStatus: 3, deletedDate: new Date() });
+    const deleted = fileRow({
+      fileId: 5,
+      folderId: 10,
+      originalFileName: 'd.pdf',
+      fileStatus: 3,
+      deletedDate: new Date(),
+    });
     const b = make({ files: [deleted] });
     expect(await errorCode(b.svc.restore(manager(), 5))).toBe('FILE_CONTENT_MISSING');
 
-    const folders = [folderRow({ folderId: 1, confidentialityLevel: 2 }), folderRow({ folderId: 10, parentFolderId: 1, isDeleted: true, folderDepth: 2 })];
+    const folders = [
+      folderRow({ folderId: 1, confidentialityLevel: 2 }),
+      folderRow({ folderId: 10, parentFolderId: 1, isDeleted: true, folderDepth: 2 }),
+    ];
     const c = make({ files: [deleted], folders });
     expect(await errorCode(c.svc.restore(manager(), 5))).toBe('FOLDER_DELETED');
   });
@@ -491,7 +652,14 @@ describe('FilesService — เปลี่ยนชื่อ / ลบ / กู�
   it('กู้คืนสำเร็จ: ชื่อชนกับไฟล์ที่ใช้งานอยู่ → ตั้งเป็น copy(N)', async () => {
     const files = [
       fileRow({ fileId: 1, folderId: 10, originalFileName: 'a.pdf' }),
-      fileRow({ fileId: 5, folderId: 10, originalFileName: 'a.pdf', fileStatus: 3, storedFileName: 'del_1_x.pdf', physicalPath: '1/10/del_1_x.pdf' }),
+      fileRow({
+        fileId: 5,
+        folderId: 10,
+        originalFileName: 'a.pdf',
+        fileStatus: 3,
+        storedFileName: 'del_1_x.pdf',
+        physicalPath: '1/10/del_1_x.pdf',
+      }),
     ];
     const { svc, fileRepo } = make({ files });
     mkdirSync(join(root, '1', '10'), { recursive: true });
@@ -506,7 +674,10 @@ describe('FilesService — ย้าย / คัดลอก', () => {
   async function stored(opts: Opts = {}) {
     const ctx = make({ files: [], ...opts });
     await ctx.svc.upload(manager(), 10, [source('doc.pdf', 'เนื้อหา')]);
-    return { ...ctx, file: ctx.fileRepo.rows.find((r) => r.folderId === 10) as ReturnType<typeof fileRow> };
+    return {
+      ...ctx,
+      file: ctx.fileRepo.rows.find((r) => r.folderId === 10) as ReturnType<typeof fileRow>,
+    };
   }
 
   it('ย้าย: ย้ายไฟล์กายภาพไปโครง <org>/<folder>/ ใหม่ แล้วแก้ DB และปรับตัวนับทั้งสองโฟลเดอร์', async () => {
@@ -551,30 +722,53 @@ describe('FilesService — ย้าย / คัดลอก', () => {
   });
 
   it('ย้ายข้ามหน่วยงานตรวจโควตาของหน่วยงานปลายทาง · ปลายทางต้องมีสิทธิ์', async () => {
-    const quota = { validateBatch: jest.fn(async () => undefined), enforceQuota: jest.fn(), sendAlertIfNeeded: jest.fn() };
+    const quota = {
+      validateBatch: jest.fn(async () => undefined),
+      enforceQuota: jest.fn(),
+      sendAlertIfNeeded: jest.fn(),
+    };
     const { svc, file } = await stored({ quota });
     await svc.moveMany(manager(), [file.fileId], 21);
     expect(quota.validateBatch).toHaveBeenCalledWith(2, [Buffer.byteLength('เนื้อหา')]);
 
     const denied = await stored({ rule: (_u, folderId) => folderId !== 11 });
-    expect(await errorCode(denied.svc.moveMany(officer(), [denied.file.fileId], 11))).toBe('FOLDER_MOVE_DENIED');
+    expect(await errorCode(denied.svc.moveMany(officer(), [denied.file.fileId], 11))).toBe(
+      'FOLDER_MOVE_DENIED',
+    );
   });
 
   it('คัดลอก: สร้างแถวใหม่ + ไฟล์กายภาพใหม่ (checksum เดิม) และต้นฉบับยังอยู่', async () => {
     const { svc, file, fileRepo, aclRepo } = await stored();
     const copy = await svc.copy(manager(), file.fileId, { destinationFolderId: 11 });
-    expect(copy).toMatchObject({ folderId: 11, originalFileName: 'doc.pdf', checksum: file.checksum, version: 1 });
+    expect(copy).toMatchObject({
+      folderId: 11,
+      originalFileName: 'doc.pdf',
+      checksum: file.checksum,
+      version: 1,
+    });
     expect(copy.fileId).not.toBe(file.fileId);
     expect(fileRepo.rows).toHaveLength(2);
     expect(filesOnDisk()).toHaveLength(2);
-    expect(aclRepo.copyFolderPermissionsToFile).toHaveBeenLastCalledWith(11, copy.fileId, manager().userId, expect.anything());
+    expect(aclRepo.copyFolderPermissionsToFile).toHaveBeenLastCalledWith(
+      11,
+      copy.fileId,
+      manager().userId,
+      expect.anything(),
+    );
   });
 
   it('คัดลอกชื่อซ้ำ → copy(N) · overwrite → แทนที่และ Version+1', async () => {
     const { svc, file, fileRepo } = await stored();
-    fileRepo.rows.push(fileRow({ fileId: 71, folderId: 11, originalFileName: 'doc.pdf', version: 2 }));
-    expect((await svc.copy(manager(), file.fileId, { destinationFolderId: 11 })).originalFileName).toBe('doc copy(1).pdf');
-    const replaced = await svc.copy(manager(), file.fileId, { destinationFolderId: 11, overwrite: true });
+    fileRepo.rows.push(
+      fileRow({ fileId: 71, folderId: 11, originalFileName: 'doc.pdf', version: 2 }),
+    );
+    expect(
+      (await svc.copy(manager(), file.fileId, { destinationFolderId: 11 })).originalFileName,
+    ).toBe('doc copy(1).pdf');
+    const replaced = await svc.copy(manager(), file.fileId, {
+      destinationFolderId: 11,
+      overwrite: true,
+    });
     expect(replaced).toMatchObject({ originalFileName: 'doc.pdf', version: 3 });
     expect(fileRepo.rows.find((r) => r.fileId === 71)?.fileStatus).toBe(3);
   });
@@ -582,7 +776,9 @@ describe('FilesService — ย้าย / คัดลอก', () => {
   it('คัดลอกล้มที่ DB → ลบไฟล์กายภาพที่คัดลอกมา', async () => {
     const { svc, file, fileRepo } = await stored();
     fileRepo.failInsert = new Error('db down');
-    await expect(svc.copy(manager(), file.fileId, { destinationFolderId: 11 })).rejects.toThrow('db down');
+    await expect(svc.copy(manager(), file.fileId, { destinationFolderId: 11 })).rejects.toThrow(
+      'db down',
+    );
     expect(filesOnDisk()).toHaveLength(1);
   });
 
@@ -597,16 +793,22 @@ describe('FilesService — ย้าย / คัดลอก', () => {
     };
     const c = await stored({ quota });
     quota.full = true;
-    expect(await errorCode(c.svc.copy(manager(), c.file.fileId, { destinationFolderId: 11 }))).toBe('QUOTA_FULL');
+    expect(await errorCode(c.svc.copy(manager(), c.file.fileId, { destinationFolderId: 11 }))).toBe(
+      'QUOTA_FULL',
+    );
     expect(filesOnDisk()).toHaveLength(1);
 
     const b = await stored();
     b.gate.open = false;
-    expect(await errorCode(b.svc.copy(officer(), b.file.fileId, { destinationFolderId: 11 }))).toBe('FILE_VIEW_DENIED');
+    expect(await errorCode(b.svc.copy(officer(), b.file.fileId, { destinationFolderId: 11 }))).toBe(
+      'FILE_VIEW_DENIED',
+    );
 
     const a = await stored();
     for (const f of filesOnDisk()) rmSync(f);
-    expect(await errorCode(a.svc.copy(manager(), a.file.fileId, { destinationFolderId: 11 }))).toBe('FILE_CONTENT_MISSING');
+    expect(await errorCode(a.svc.copy(manager(), a.file.fileId, { destinationFolderId: 11 }))).toBe(
+      'FILE_CONTENT_MISSING',
+    );
   });
 });
 
@@ -617,15 +819,24 @@ describe('FilesService — อ่านรายการ/เวอร์ชั�
       fileRow({ fileId: 2, originalFileName: 'a.pdf', version: 2 }),
     ];
     const { svc } = make({ files });
-    const page = await svc.listByFolder(manager(), 10, { page: 1, pageSize: 20, sortDir: 'asc' } as never);
+    const page = await svc.listByFolder(manager(), 10, {
+      page: 1,
+      pageSize: 20,
+      sortDir: 'asc',
+    } as never);
     expect(page.items.map((i) => i.fileId)).toEqual([2]);
     const v = await svc.versions(manager(), 2);
-    expect(v.map((x) => [x.fileId, x.isCurrent])).toEqual([[1, false], [2, true]]);
+    expect(v.map((x) => [x.fileId, x.isCurrent])).toEqual([
+      [1, false],
+      [2, true],
+    ]);
     const denied = make({ files, rule: () => false });
-    expect(await errorCode(denied.svc.listByFolder(officer(), 10, { page: 1, pageSize: 20 } as never))).toBe(
-      'FOLDER_VIEW_DENIED',
-    );
-    expect((await svc.checkDuplicates(manager(), 10, ['a.pdf', 'z.pdf'])).duplicates).toEqual(['a.pdf']);
+    expect(
+      await errorCode(denied.svc.listByFolder(officer(), 10, { page: 1, pageSize: 20 } as never)),
+    ).toBe('FOLDER_VIEW_DENIED');
+    expect((await svc.checkDuplicates(manager(), 10, ['a.pdf', 'z.pdf'])).duplicates).toEqual([
+      'a.pdf',
+    ]);
   });
 });
 
@@ -647,7 +858,9 @@ describe('DMS_FILE_PORT adapter', () => {
   it('openRead ใช้เกณฑ์ดาวน์โหลดเดียวกับ HTTP · openReadUnchecked ข้ามสิทธิ์ผู้ใช้แต่ยัง log', async () => {
     const { svc, crud } = make();
     const port = new DmsFilePortAdapter(svc);
-    const [info] = await port.upload(manager(), 10, [{ originalName: 'kb.pdf', buffer: Buffer.from('x') }]);
+    const [info] = await port.upload(manager(), 10, [
+      { originalName: 'kb.pdf', buffer: Buffer.from('x') },
+    ]);
     const h = await port.openRead(manager(), info.fileId);
     expect(h).toMatchObject({ fileName: 'kb.pdf', size: 1, mimeType: 'application/pdf' });
     await drain(h.stream);
@@ -655,7 +868,9 @@ describe('DMS_FILE_PORT adapter', () => {
     const unchecked = new DmsFileUncheckedAdapter(svc);
     const u = await unchecked.openReadUnchecked(info.fileId);
     expect((await drain(u.stream)).toString()).toBe('x');
-    expect((await logEvents(crud)).some((e) => e.operation === 'DOWNLOAD_FILE_UNCHECKED')).toBe(true);
+    expect((await logEvents(crud)).some((e) => e.operation === 'DOWNLOAD_FILE_UNCHECKED')).toBe(
+      true,
+    );
 
     await port.remove(manager(), info.fileId);
     expect(await port.listFolder(10)).toHaveLength(0);

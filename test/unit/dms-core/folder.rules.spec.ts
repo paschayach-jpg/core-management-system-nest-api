@@ -70,12 +70,12 @@ describe('folder.rules — Root หลัก 1HC/2SC/3NC/4PC', () => {
   });
 
   it('ไม่ระบุชั้น/ชั้นนอก 1–4 → ROOT_FOLDER_NOT_ALLOWED', () => {
-    expect(code(() => assertRootCreationAllowed({ name: 'X', level: undefined, existingRoots: [] }))).toBe(
-      'ROOT_FOLDER_NOT_ALLOWED',
-    );
-    expect(code(() => assertRootCreationAllowed({ name: '5XX', level: 5, existingRoots: [] }))).toBe(
-      'ROOT_FOLDER_NOT_ALLOWED',
-    );
+    expect(
+      code(() => assertRootCreationAllowed({ name: 'X', level: undefined, existingRoots: [] })),
+    ).toBe('ROOT_FOLDER_NOT_ALLOWED');
+    expect(
+      code(() => assertRootCreationAllowed({ name: '5XX', level: 5, existingRoots: [] })),
+    ).toBe('ROOT_FOLDER_NOT_ALLOWED');
   });
 
   it('ชื่อไม่ตรงรหัส → ROOT_FOLDER_NAME_INVALID', () => {
@@ -86,16 +86,19 @@ describe('folder.rules — Root หลัก 1HC/2SC/3NC/4PC', () => {
 
   it('2SC/3NC/4PC มีได้อย่างละ 1 ต่อหน่วยงาน → ROOT_FOLDER_EXISTS', () => {
     const roots = [{ confidentialityLevel: 2 }];
-    expect(code(() => assertRootCreationAllowed({ name: '2SC-2', level: 2, existingRoots: roots }))).toBe(
-      'ROOT_FOLDER_EXISTS',
-    );
+    expect(
+      code(() => assertRootCreationAllowed({ name: '2SC-2', level: 2, existingRoots: roots })),
+    ).toBe('ROOT_FOLDER_EXISTS');
     // Root ที่ถูกลบ/เก็บถาวรไม่นับ
     expect(
       code(() =>
         assertRootCreationAllowed({
           name: '2SC-2',
           level: 2,
-          existingRoots: [{ confidentialityLevel: 2, isDeleted: true }, { confidentialityLevel: 2, isArchived: true }],
+          existingRoots: [
+            { confidentialityLevel: 2, isDeleted: true },
+            { confidentialityLevel: 2, isArchived: true },
+          ],
         }),
       ),
     ).toBeUndefined();
@@ -114,12 +117,20 @@ describe('folder.rules — Root หลัก 1HC/2SC/3NC/4PC', () => {
   });
 
   it('ต้องสร้างใต้ Root หลักเท่านั้น', () => {
-    expect(isMainRoot({ parentFolderId: null, confidentialityLevel: 3, folderName: '3NC - a' })).toBe(true);
-    expect(isMainRoot({ parentFolderId: 9, confidentialityLevel: 3, folderName: '3NC - a' })).toBe(false);
-    expect(isMainRoot({ parentFolderId: null, confidentialityLevel: 3, folderName: 'อื่นๆ' })).toBe(false);
+    expect(
+      isMainRoot({ parentFolderId: null, confidentialityLevel: 3, folderName: '3NC - a' }),
+    ).toBe(true);
+    expect(isMainRoot({ parentFolderId: 9, confidentialityLevel: 3, folderName: '3NC - a' })).toBe(
+      false,
+    );
+    expect(isMainRoot({ parentFolderId: null, confidentialityLevel: 3, folderName: 'อื่นๆ' })).toBe(
+      false,
+    );
     expect(code(() => assertUnderMainRoot(null))).toBe('FOLDER_NOT_UNDER_MAIN_ROOT');
     expect(
-      code(() => assertUnderMainRoot({ parentFolderId: null, confidentialityLevel: 4, folderName: 'Misc' })),
+      code(() =>
+        assertUnderMainRoot({ parentFolderId: null, confidentialityLevel: 4, folderName: 'Misc' }),
+      ),
     ).toBe('FOLDER_NOT_UNDER_MAIN_ROOT');
   });
 });
@@ -164,7 +175,9 @@ describe('folder.rules — ความลึก/ชั้นความลั�
       resolveNewFolderAttributes({ parent: { folderDepth: 9, confidentialityLevel: 4 } }).depth,
     ).toBe(10);
     expect(
-      code(() => resolveNewFolderAttributes({ parent: { folderDepth: 10, confidentialityLevel: 4 } })),
+      code(() =>
+        resolveNewFolderAttributes({ parent: { folderDepth: 10, confidentialityLevel: 4 } }),
+      ),
     ).toBe('FOLDER_DEPTH_EXCEEDED');
   });
 });
@@ -190,7 +203,9 @@ describe('folder.rules — ย้ายโฟลเดอร์', () => {
   });
 
   it('Root หลักย้ายไม่ได้', () => {
-    expect(code(() => assertMoveAllowed({ ...ok, sourceIsRoot: true }))).toBe('ROOT_FOLDER_IMMUTABLE');
+    expect(code(() => assertMoveAllowed({ ...ok, sourceIsRoot: true }))).toBe(
+      'ROOT_FOLDER_IMMUTABLE',
+    );
   });
 
   it('ย้ายเข้าตัวเอง/เข้าลูกหลานของตัวเองไม่ได้', () => {
@@ -201,7 +216,9 @@ describe('folder.rules — ย้ายโฟลเดอร์', () => {
   });
 
   it('ลึกเกิน 10 หลังย้าย → FOLDER_DEPTH_EXCEEDED', () => {
-    expect(code(() => assertMoveAllowed({ ...ok, projectedDepth: 11 }))).toBe('FOLDER_DEPTH_EXCEEDED');
+    expect(code(() => assertMoveAllowed({ ...ok, projectedDepth: 11 }))).toBe(
+      'FOLDER_DEPTH_EXCEEDED',
+    );
   });
 
   it('ชื่อซ้ำในปลายทาง (ไม่สนตัวพิมพ์) → FOLDER_NAME_DUPLICATE', () => {

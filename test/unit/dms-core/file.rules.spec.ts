@@ -21,17 +21,28 @@ const code = (fn: () => unknown): string | undefined => {
 };
 
 describe('file.rules — ชนิดและขนาดไฟล์', () => {
-  it.each(['a.pdf', 'a.DOC', 'a.docx', 'a.xls', 'a.xlsx', 'a.ppt', 'a.pptx', 'a.jpg', 'a.png', 'a.gif', 'a.zip'])(
-    'อนุญาต %s',
-    (name) => {
-      expect(checkUploadCandidate({ name, sizeBytes: 10 })).toBeNull();
-    },
-  );
+  it.each([
+    'a.pdf',
+    'a.DOC',
+    'a.docx',
+    'a.xls',
+    'a.xlsx',
+    'a.ppt',
+    'a.pptx',
+    'a.jpg',
+    'a.png',
+    'a.gif',
+    'a.zip',
+  ])('อนุญาต %s', (name) => {
+    expect(checkUploadCandidate({ name, sizeBytes: 10 })).toBeNull();
+  });
 
   it.each(['a.exe', 'a.bat', 'a.html', 'a.js', 'a.svg', 'noext', '.pdf'])(
     'ไม่อนุญาต %s → FILE_EXTENSION_NOT_ALLOWED',
     (name) => {
-      expect(checkUploadCandidate({ name, sizeBytes: 10 })?.code).toBe('FILE_EXTENSION_NOT_ALLOWED');
+      expect(checkUploadCandidate({ name, sizeBytes: 10 })?.code).toBe(
+        'FILE_EXTENSION_NOT_ALLOWED',
+      );
     },
   );
 
@@ -43,13 +54,16 @@ describe('file.rules — ชนิดและขนาดไฟล์', () => {
   });
 
   it('เพดานที่ตั้งต่ำกว่า 100 MB ใช้ได้', () => {
-    expect(checkUploadCandidate({ name: 'a.pdf', sizeBytes: 2 * 1024 * 1024, maxBytes: 1024 * 1024 })?.code).toBe(
-      'FILE_TOO_LARGE',
-    );
+    expect(
+      checkUploadCandidate({ name: 'a.pdf', sizeBytes: 2 * 1024 * 1024, maxBytes: 1024 * 1024 })
+        ?.code,
+    ).toBe('FILE_TOO_LARGE');
   });
 
   it('ชื่อที่มี path/อักขระต้องห้ามถูกปฏิเสธ', () => {
-    expect(checkUploadCandidate({ name: '../a.pdf', sizeBytes: 1 })?.code).toBe('FILE_NAME_INVALID');
+    expect(checkUploadCandidate({ name: '../a.pdf', sizeBytes: 1 })?.code).toBe(
+      'FILE_NAME_INVALID',
+    );
     expect(checkUploadCandidate({ name: 'a:b.pdf', sizeBytes: 1 })?.code).toBe('FILE_NAME_INVALID');
     expect(code(() => validateFileName('  '))).toBe('FILE_NAME_REQUIRED');
     expect(code(() => validateFileName('ก'.repeat(261)))).toBe('FILE_NAME_TOO_LONG');
@@ -78,7 +92,9 @@ describe('file.rules — ชื่อซ้ำ copy(N)', () => {
 
   it('N เริ่มที่ (จำนวนไฟล์ที่ขึ้นต้น "name copy") + 1', () => {
     expect(resolveCopyName('a.pdf', ['a.pdf', 'a copy(1).pdf'])).toBe('a copy(2).pdf');
-    expect(resolveCopyName('a.pdf', ['a.pdf', 'a copy(1).pdf', 'a copy(2).pdf'])).toBe('a copy(3).pdf');
+    expect(resolveCopyName('a.pdf', ['a.pdf', 'a copy(1).pdf', 'a copy(2).pdf'])).toBe(
+      'a copy(3).pdf',
+    );
   });
 
   it('เจอช่องว่างในลำดับ (ถูกลบไปบางตัว) ยังหาชื่อที่ว่างได้และไม่ชน', () => {

@@ -19,9 +19,27 @@ import {
 // โครงสร้างตัวอย่าง:  1(2SC root) → 2 → 3 → 4   ,   10(4PC root)
 const sample = (): FolderRow[] => [
   folderRow({ folderId: 1, folderName: '2SC - A [2SC]', confidentialityLevel: 2, folderDepth: 1 }),
-  folderRow({ folderId: 2, folderName: 'งบประมาณ', parentFolderId: 1, confidentialityLevel: 2, folderDepth: 2 }),
-  folderRow({ folderId: 3, folderName: 'รายงาน', parentFolderId: 2, confidentialityLevel: 2, folderDepth: 3 }),
-  folderRow({ folderId: 4, folderName: 'ปี 2569', parentFolderId: 3, confidentialityLevel: 2, folderDepth: 4 }),
+  folderRow({
+    folderId: 2,
+    folderName: 'งบประมาณ',
+    parentFolderId: 1,
+    confidentialityLevel: 2,
+    folderDepth: 2,
+  }),
+  folderRow({
+    folderId: 3,
+    folderName: 'รายงาน',
+    parentFolderId: 2,
+    confidentialityLevel: 2,
+    folderDepth: 3,
+  }),
+  folderRow({
+    folderId: 4,
+    folderName: 'ปี 2569',
+    parentFolderId: 3,
+    confidentialityLevel: 2,
+    folderDepth: 4,
+  }),
   folderRow({ folderId: 10, folderName: '4PC - A [4PC]', confidentialityLevel: 4, folderDepth: 1 }),
 ];
 
@@ -66,7 +84,10 @@ describe('FoldersService.create — โฟลเดอร์ย่อย', () =>
       confidentialityLevel: 2,
       inheritPermission: true,
     });
-    expect(repo.called('insert')[0].args[0]).toMatchObject({ orgUnitId: 1, createdBy: manager().userId });
+    expect(repo.called('insert')[0].args[0]).toMatchObject({
+      orgUnitId: 1,
+      createdBy: manager().userId,
+    });
     const ev = (await logEvents(crud)).find((e) => e.operation === 'CREATE_FOLDER');
     expect(ev).toMatchObject({ module: 'DMS', entity: 'Folder', action: 'CREATE', success: true });
     expect(ev?.recordId).toBe(r.folder?.folderId);
@@ -74,15 +95,21 @@ describe('FoldersService.create — โฟลเดอร์ย่อย', () =>
 
   it('ระบุชั้นความลับเท่าแม่ → InheritPermission=false', async () => {
     const { svc } = make();
-    const r = await svc.create(manager(), { name: 'x', parentFolderId: 2, confidentialityLevel: 2 });
+    const r = await svc.create(manager(), {
+      name: 'x',
+      parentFolderId: 2,
+      confidentialityLevel: 2,
+    });
     expect(r.folder?.inheritPermission).toBe(false);
   });
 
   it('ระบุชั้นความลับต่างจากแม่ → 422 FOLDER_LEVEL_MISMATCH', async () => {
     const { svc } = make();
-    expect(await errorCode(svc.create(manager(), { name: 'x', parentFolderId: 2, confidentialityLevel: 4 }))).toBe(
-      'FOLDER_LEVEL_MISMATCH',
-    );
+    expect(
+      await errorCode(
+        svc.create(manager(), { name: 'x', parentFolderId: 2, confidentialityLevel: 4 }),
+      ),
+    ).toBe('FOLDER_LEVEL_MISMATCH');
   });
 
   it('ชื่อซ้ำในแม่เดียวกัน (ไม่สนตัวพิมพ์) → 409 FOLDER_NAME_DUPLICATE และ log success=false', async () => {
@@ -90,7 +117,9 @@ describe('FoldersService.create — โฟลเดอร์ย่อย', () =>
     expect(await errorCode(svc.create(manager(), { name: ' งบประมาณ ', parentFolderId: 1 }))).toBe(
       'FOLDER_NAME_DUPLICATE',
     );
-    expect(await errorStatus(svc.create(manager(), { name: 'งบประมาณ', parentFolderId: 1 }))).toBe(409);
+    expect(await errorStatus(svc.create(manager(), { name: 'งบประมาณ', parentFolderId: 1 }))).toBe(
+      409,
+    );
     expect(repo.called('insert')).toHaveLength(0);
     const ev = (await logEvents(crud)).filter((e) => e.operation === 'CREATE_FOLDER');
     expect(ev.every((e) => e.success === false)).toBe(true);
@@ -106,7 +135,15 @@ describe('FoldersService.create — โฟลเดอร์ย่อย', () =>
 
   it('ลึกเกิน 10 ชั้น → 422 FOLDER_DEPTH_EXCEEDED', async () => {
     const rows = sample();
-    rows.push(folderRow({ folderId: 5, parentFolderId: 4, folderName: 'ลึก', confidentialityLevel: 2, folderDepth: 10 }));
+    rows.push(
+      folderRow({
+        folderId: 5,
+        parentFolderId: 4,
+        folderName: 'ลึก',
+        confidentialityLevel: 2,
+        folderDepth: 10,
+      }),
+    );
     const { svc } = make({ rows });
     expect(await errorCode(svc.create(manager(), { name: 'ชั้น 11', parentFolderId: 5 }))).toBe(
       'FOLDER_DEPTH_EXCEEDED',
@@ -118,8 +155,12 @@ describe('FoldersService.create — โฟลเดอร์ย่อย', () =>
     rows[1].isDeleted = true;
     rows[2].isArchived = true;
     const { svc } = make({ rows });
-    expect(await errorCode(svc.create(manager(), { name: 'x', parentFolderId: 2 }))).toBe('FOLDER_DELETED');
-    expect(await errorCode(svc.create(manager(), { name: 'x', parentFolderId: 3 }))).toBe('FOLDER_ARCHIVED');
+    expect(await errorCode(svc.create(manager(), { name: 'x', parentFolderId: 2 }))).toBe(
+      'FOLDER_DELETED',
+    );
+    expect(await errorCode(svc.create(manager(), { name: 'x', parentFolderId: 3 }))).toBe(
+      'FOLDER_ARCHIVED',
+    );
     expect(await errorStatus(svc.create(manager(), { name: 'x', parentFolderId: 999 }))).toBe(404);
   });
 
@@ -136,14 +177,16 @@ describe('FoldersService.create — โฟลเดอร์ย่อย', () =>
 
   it('ระบุหน่วยงานไม่ตรงกับแม่ → 422 ORG_UNIT_MISMATCH', async () => {
     const { svc } = make();
-    expect(await errorCode(svc.create(manager(), { name: 'x', parentFolderId: 2, orgUnitId: 9 }))).toBe(
-      'ORG_UNIT_MISMATCH',
-    );
+    expect(
+      await errorCode(svc.create(manager(), { name: 'x', parentFolderId: 2, orgUnitId: 9 })),
+    ).toBe('ORG_UNIT_MISMATCH');
   });
 
   it('ไม่มีสิทธิ์เพิ่ม (ไม่มี Authority และ ACL ปฏิเสธ) → 403 FOLDER_ADD_DENIED', async () => {
     const { svc, repo } = make({ rule: () => false });
-    expect(await errorCode(svc.create(officer(), { name: 'x', parentFolderId: 2 }))).toBe('FOLDER_ADD_DENIED');
+    expect(await errorCode(svc.create(officer(), { name: 'x', parentFolderId: 2 }))).toBe(
+      'FOLDER_ADD_DENIED',
+    );
     expect(await errorStatus(svc.create(officer(), { name: 'x', parentFolderId: 2 }))).toBe(403);
     expect(repo.called('insert')).toHaveLength(0);
   });
@@ -158,18 +201,31 @@ describe('FoldersService.create — โฟลเดอร์ย่อย', () =>
 describe('FoldersService.create — Root หลัก', () => {
   it('สร้าง 2SC ของหน่วยงานที่ยังไม่มี → สำเร็จ depth 1, InheritPermission=false', async () => {
     const { svc } = make({ rows: [] });
-    const r = await svc.create(manager(), { name: '2SC - ฝ่าย ก [2SC]', orgUnitId: 1, confidentialityLevel: 2 });
-    expect(r.folder).toMatchObject({ parentFolderId: null, folderDepth: 1, confidentialityLevel: 2, inheritPermission: false });
+    const r = await svc.create(manager(), {
+      name: '2SC - ฝ่าย ก [2SC]',
+      orgUnitId: 1,
+      confidentialityLevel: 2,
+    });
+    expect(r.folder).toMatchObject({
+      parentFolderId: null,
+      folderDepth: 1,
+      confidentialityLevel: 2,
+      inheritPermission: false,
+    });
   });
 
   it('ไม่ระบุหน่วยงาน → 422 ORG_UNIT_REQUIRED · หน่วยงานใช้ไม่ได้ → 404', async () => {
     const a = make({ rows: [] });
-    expect(await errorCode(a.svc.create(manager(), { name: '2SC - x', confidentialityLevel: 2 }))).toBe(
-      'ORG_UNIT_REQUIRED',
-    );
+    expect(
+      await errorCode(a.svc.create(manager(), { name: '2SC - x', confidentialityLevel: 2 })),
+    ).toBe('ORG_UNIT_REQUIRED');
     const b = make({ rows: [] });
     b.repo.orgUsable = false;
-    expect(await errorStatus(b.svc.create(manager(), { name: '2SC - x', orgUnitId: 9, confidentialityLevel: 2 }))).toBe(404);
+    expect(
+      await errorStatus(
+        b.svc.create(manager(), { name: '2SC - x', orgUnitId: 9, confidentialityLevel: 2 }),
+      ),
+    ).toBe(404);
   });
 
   it('Root ต้องระบุชั้นความลับ และชื่อต้องขึ้นต้นด้วยรหัส', async () => {
@@ -177,22 +233,28 @@ describe('FoldersService.create — Root หลัก', () => {
     expect(await errorCode(svc.create(manager(), { name: 'อะไรก็ได้', orgUnitId: 1 }))).toBe(
       'ROOT_FOLDER_NOT_ALLOWED',
     );
-    expect(await errorCode(svc.create(manager(), { name: 'อะไรก็ได้', orgUnitId: 1, confidentialityLevel: 3 }))).toBe(
-      'ROOT_FOLDER_NAME_INVALID',
-    );
+    expect(
+      await errorCode(
+        svc.create(manager(), { name: 'อะไรก็ได้', orgUnitId: 1, confidentialityLevel: 3 }),
+      ),
+    ).toBe('ROOT_FOLDER_NAME_INVALID');
   });
 
   it('Root ระดับเดียวกันมีอยู่แล้ว → 409 ROOT_FOLDER_EXISTS', async () => {
     const { svc } = make();
     expect(
-      await errorCode(svc.create(manager(), { name: '2SC - B', orgUnitId: 1, confidentialityLevel: 2 })),
+      await errorCode(
+        svc.create(manager(), { name: '2SC - B', orgUnitId: 1, confidentialityLevel: 2 }),
+      ),
     ).toBe('ROOT_FOLDER_EXISTS');
   });
 
   it('ผู้ใช้ทั่วไปที่ไม่มี Authority.CanAdd สร้าง Root ไม่ได้ → 403', async () => {
     const { svc } = make({ rows: [] });
     expect(
-      await errorCode(svc.create(officer(), { name: '3NC - x', orgUnitId: 1, confidentialityLevel: 3 })),
+      await errorCode(
+        svc.create(officer(), { name: '3NC - x', orgUnitId: 1, confidentialityLevel: 3 }),
+      ),
     ).toBe('ROOT_FOLDER_CREATE_DENIED');
   });
 });
@@ -202,7 +264,12 @@ describe('FoldersService.create — 1HC ต้องผ่านการอน�
     const submit = jest.fn(async () => ({ requestId: 55, requestStatus: 1 }));
     const { svc, repo, crud } = make({ rows: [], approvals: { submit } });
     const u = manager();
-    const r = await svc.create(u, { name: '1HC - ลับมาก [1HC]', orgUnitId: 1, confidentialityLevel: 1, reason: 'จำเป็น' });
+    const r = await svc.create(u, {
+      name: '1HC - ลับมาก [1HC]',
+      orgUnitId: 1,
+      confidentialityLevel: 1,
+      reason: 'จำเป็น',
+    });
     expect(r).toEqual({ created: false, approval: { requestId: 55, requestStatus: 1 } });
     expect(repo.called('insert')).toHaveLength(0);
     expect(submit).toHaveBeenCalledWith(u, {
@@ -225,14 +292,21 @@ describe('FoldersService.create — 1HC ต้องผ่านการอน�
     const submit = jest.fn(async () => ({ requestId: 1, requestStatus: 1 }));
     const rows = [folderRow({ folderId: 9, folderName: '1HC - เดิม', confidentialityLevel: 1 })];
     const { svc } = make({ rows, approvals: { submit } });
-    expect((await svc.create(manager(), { name: '1HC - เดิม', orgUnitId: 1, confidentialityLevel: 1 })).created).toBe(false);
+    expect(
+      (await svc.create(manager(), { name: '1HC - เดิม', orgUnitId: 1, confidentialityLevel: 1 }))
+        .created,
+    ).toBe(false);
   });
 
   it('ไม่มีระบบอนุมัติ → 503 APPROVAL_SERVICE_UNAVAILABLE', async () => {
     const { svc, crud } = make({ rows: [] });
     const p = svc.create(manager(), { name: '1HC - x', orgUnitId: 1, confidentialityLevel: 1 });
     expect(await errorCode(p)).toBe('APPROVAL_SERVICE_UNAVAILABLE');
-    expect(await errorStatus(svc.create(manager(), { name: '1HC - x', orgUnitId: 1, confidentialityLevel: 1 }))).toBe(503);
+    expect(
+      await errorStatus(
+        svc.create(manager(), { name: '1HC - x', orgUnitId: 1, confidentialityLevel: 1 }),
+      ),
+    ).toBe(503);
     expect((await logEvents(crud)).every((e) => e.success === false)).toBe(true);
   });
 });
@@ -266,7 +340,9 @@ describe('FoldersService.create — โควตาผ่าน DMS_QUOTA_PORT',
       validateBatch: jest.fn(),
     };
     const { svc, repo } = make({ quota });
-    expect(await errorCode(svc.create(manager(), { name: 'ใหม่', parentFolderId: 2 }))).toBe('QUOTA_FULL');
+    expect(await errorCode(svc.create(manager(), { name: 'ใหม่', parentFolderId: 2 }))).toBe(
+      'QUOTA_FULL',
+    );
     expect(repo.called('insert')).toHaveLength(0);
     expect(quota.sendAlertIfNeeded).not.toHaveBeenCalled();
   });
@@ -301,7 +377,15 @@ describe('FoldersService.rename', () => {
 
   it('ชื่อซ้ำกับพี่น้อง → 409 · ชื่อเดิมของตัวเองไม่นับว่าซ้ำ', async () => {
     const rows = sample();
-    rows.push(folderRow({ folderId: 6, parentFolderId: 1, folderName: 'บุคคล', confidentialityLevel: 2, folderDepth: 2 }));
+    rows.push(
+      folderRow({
+        folderId: 6,
+        parentFolderId: 1,
+        folderName: 'บุคคล',
+        confidentialityLevel: 2,
+        folderDepth: 2,
+      }),
+    );
     const { svc } = make({ rows });
     expect(await errorCode(svc.rename(manager(), 6, 'งบประมาณ'))).toBe('FOLDER_NAME_DUPLICATE');
     expect((await svc.rename(manager(), 6, 'บุคคล')).folderName).toBe('บุคคล');
@@ -354,7 +438,9 @@ describe('FoldersService.remove / requestDelete — ลบโฟลเดอร�
     const rows = sample();
     rows[1].isDeleted = true;
     expect(await errorCode(make({ rows }).svc.remove(manager(), 2))).toBe('FOLDER_ALREADY_DELETED');
-    expect(await errorCode(make({ rule: () => false }).svc.remove(officer(), 2))).toBe('FOLDER_DELETE_DENIED');
+    expect(await errorCode(make({ rule: () => false }).svc.remove(officer(), 2))).toBe(
+      'FOLDER_DELETE_DENIED',
+    );
   });
 
   it('requestDelete: ไม่มีไฟล์ → บอกให้ลบตรง (FOLDER_HAS_NO_FILES)', async () => {
@@ -377,14 +463,19 @@ describe('FoldersService.remove / requestDelete — ลบโฟลเดอร�
       reason: 'เลิกใช้',
       approverUserIds: [4, 5, u.userId].filter((id) => id !== u.userId),
     });
-    expect((await logEvents(crud)).find((e) => e.operation === 'REQUEST_DELETE_FOLDER')).toMatchObject({
+    expect(
+      (await logEvents(crud)).find((e) => e.operation === 'REQUEST_DELETE_FOLDER'),
+    ).toMatchObject({
       action: 'EXECUTE',
       success: true,
     });
   });
 
   it('requestDelete: มี Admin เพียงคนเดียวและเป็นผู้ขอ → อนุมัติเองได้ · ไม่มี Admin → 422', async () => {
-    const submit = jest.fn(async (_u: unknown, _i: unknown) => ({ requestId: 1, requestStatus: 1 }));
+    const submit = jest.fn(async (_u: unknown, _i: unknown) => ({
+      requestId: 1,
+      requestStatus: 1,
+    }));
     const a = make({ approvals: { submit } });
     a.repo.filesInSubtree = 1;
     const adm = admin();
@@ -414,8 +505,21 @@ describe('FoldersService — ย้าย / คัดลอกโครงสร
   it('ย้ายสำเร็จ: ส่งส่วนต่างความลึก + หน่วยงาน/ชั้นความลับของปลายทาง + ลูกหลานทั้งหมดให้ repository', async () => {
     const rows = sample();
     rows.push(
-      folderRow({ folderId: 20, folderName: '3NC - A', confidentialityLevel: 3, folderDepth: 1, orgUnitId: 2 }),
-      folderRow({ folderId: 21, folderName: 'ปลายทาง', parentFolderId: 20, confidentialityLevel: 3, folderDepth: 2, orgUnitId: 2 }),
+      folderRow({
+        folderId: 20,
+        folderName: '3NC - A',
+        confidentialityLevel: 3,
+        folderDepth: 1,
+        orgUnitId: 2,
+      }),
+      folderRow({
+        folderId: 21,
+        folderName: 'ปลายทาง',
+        parentFolderId: 20,
+        confidentialityLevel: 3,
+        folderDepth: 2,
+        orgUnitId: 2,
+      }),
     );
     const { svc, repo, tx } = make({ rows });
     await svc.move(srOfficer(), 3, 21);
@@ -440,12 +544,22 @@ describe('FoldersService — ย้าย / คัดลอกโครงสร
     expect(repo.called('reparent')).toHaveLength(0);
 
     const rows = sample();
-    rows.push(folderRow({ folderId: 30, parentFolderId: 10, folderName: 'รายงาน', folderDepth: 2 }));
+    rows.push(
+      folderRow({ folderId: 30, parentFolderId: 10, folderName: 'รายงาน', folderDepth: 2 }),
+    );
     const dup = make({ rows });
     expect(await errorCode(dup.svc.move(manager(), 3, 10))).toBe('FOLDER_NAME_DUPLICATE');
 
     const deep = sample();
-    deep.push(folderRow({ folderId: 40, parentFolderId: 10, folderName: 'ลึก', folderDepth: 9, confidentialityLevel: 4 }));
+    deep.push(
+      folderRow({
+        folderId: 40,
+        parentFolderId: 10,
+        folderName: 'ลึก',
+        folderDepth: 9,
+        confidentialityLevel: 4,
+      }),
+    );
     const d = make({ rows: deep });
     // ย้าย 2 (สูง 3 ชั้น: 2→3→4) ไปใต้ 40 (depth 9) → สูงสุด 9+1+2 = 12 > 10
     expect(await errorCode(d.svc.move(manager(), 2, 40))).toBe('FOLDER_DEPTH_EXCEEDED');
@@ -494,9 +608,13 @@ describe('FoldersService — ย้าย / คัดลอกโครงสร
     const { svc } = make();
     expect(await errorCode(svc.changeConfidentiality(srOfficer(), 2, 4))).toBe('ROLE_REQUIRED');
     expect(await errorCode(svc.changeConfidentiality(manager(), 1, 4))).toBe('CONF_ROOT_LOCKED');
-    expect(await errorCode(svc.changeConfidentiality(manager(), 3, 4))).toBe('CONF_CHANGE_NOT_DIRECT_CHILD');
+    expect(await errorCode(svc.changeConfidentiality(manager(), 3, 4))).toBe(
+      'CONF_CHANGE_NOT_DIRECT_CHILD',
+    );
     expect(await errorCode(svc.changeConfidentiality(manager(), 2, 3))).toBe('CONF_ROOT_NOT_FOUND');
-    expect(await errorCode(svc.changeConfidentiality(manager(), 2, 9 as never))).toBe('CONFIDENTIALITY_INVALID');
+    expect(await errorCode(svc.changeConfidentiality(manager(), 2, 9 as never))).toBe(
+      'CONFIDENTIALITY_INVALID',
+    );
   });
 
   it('เปลี่ยนชั้นความลับสำเร็จ: ย้ายไปใต้ Root ของชั้นใหม่ และทั้งต้นไม้ย่อยเปลี่ยนชั้นตาม', async () => {
@@ -520,7 +638,14 @@ describe('FoldersService — อ่าน/กรองตามการมอ�
   const rows = (): FolderRow[] => [
     ...sample(),
     folderRow({ folderId: 90, folderName: 'หน่วยอื่น', orgUnitId: 2, confidentialityLevel: 4 }),
-    folderRow({ folderId: 91, folderName: 'เก็บถาวร', parentFolderId: 10, orgUnitId: 1, isArchived: true, folderDepth: 2 }),
+    folderRow({
+      folderId: 91,
+      folderName: 'เก็บถาวร',
+      parentFolderId: 10,
+      orgUnitId: 1,
+      isArchived: true,
+      folderDepth: 2,
+    }),
   ];
 
   it('กรองตามหน่วยงานที่มองเห็น + ตัดโฟลเดอร์ที่ถูกลบ/เก็บถาวร', async () => {
@@ -544,8 +669,14 @@ describe('FoldersService — อ่าน/กรองตามการมอ�
 
   it('rootsOnly คืนเฉพาะ Root · parentFolderId คืนเฉพาะลูก', async () => {
     const { svc } = make({ rows: rows(), visible: [1] });
-    expect((await svc.listAccessible(manager(), { rootsOnly: true })).map((f) => f.folderId).sort((a, b) => a - b)).toEqual([1, 10]);
-    expect((await svc.listAccessible(manager(), { parentFolderId: 1 })).map((f) => f.folderId)).toEqual([2]);
+    expect(
+      (await svc.listAccessible(manager(), { rootsOnly: true }))
+        .map((f) => f.folderId)
+        .sort((a, b) => a - b),
+    ).toEqual([1, 10]);
+    expect(
+      (await svc.listAccessible(manager(), { parentFolderId: 1 })).map((f) => f.folderId),
+    ).toEqual([2]);
   });
 
   it('get: คืนเส้นทางจาก Root · ไม่มีสิทธิ์ดู → 403', async () => {
@@ -559,7 +690,11 @@ describe('FoldersService — อ่าน/กรองตามการมอ�
   it('stats: นับสดจาก repository', async () => {
     const { svc, repo } = make();
     repo.filesInSubtree = 7;
-    expect(await svc.stats(manager(), 2)).toMatchObject({ folderId: 2, subfolderCount: 2, subtreeFileCount: 7 });
+    expect(await svc.stats(manager(), 2)).toMatchObject({
+      folderId: 2,
+      subfolderCount: 2,
+      subtreeFileCount: 7,
+    });
   });
 });
 
@@ -585,18 +720,31 @@ describe('FoldersService — handler หลังอนุมัติ', () => {
     const { svc, repo, acl, tx, crud } = make({ rows: [] });
     const approver = admin();
     const f = await svc.createAfterApproval(record(), approver);
-    expect(f).toMatchObject({ folderName: '1HC - ลับมาก [1HC]', confidentialityLevel: 1, folderDepth: 1, createdBy: 42 });
+    expect(f).toMatchObject({
+      folderName: '1HC - ลับมาก [1HC]',
+      confidentialityLevel: 1,
+      folderDepth: 1,
+      createdBy: 42,
+    });
     expect(acl.insertFolderPermission).toHaveBeenCalledWith(
       f.folderId,
-      expect.objectContaining({ principalType: 1, principalId: 42, canRead: true, canWrite: false, grantedBy: approver.userId }),
+      expect.objectContaining({
+        principalType: 1,
+        principalId: 42,
+        canRead: true,
+        canWrite: false,
+        grantedBy: approver.userId,
+      }),
       tx.scope,
     );
     expect(tx.calls.runs).toBe(1);
     expect(repo.called('insert')).toHaveLength(1);
-    expect((await logEvents(crud)).find((e) => e.operation === 'CREATE_HC_APPROVED')).toMatchObject({
-      action: 'CREATE',
-      success: true,
-    });
+    expect((await logEvents(crud)).find((e) => e.operation === 'CREATE_HC_APPROVED')).toMatchObject(
+      {
+        action: 'CREATE',
+        success: true,
+      },
+    );
   });
 
   it('createAfterApproval: ใช้ transaction ที่ส่งมา (ไม่เปิดใหม่)', async () => {
@@ -607,9 +755,13 @@ describe('FoldersService — handler หลังอนุมัติ', () => {
   });
 
   it('createAfterApproval: ชื่อซ้ำที่เกิดระหว่างรออนุมัติ → โยน error (ย้อนทั้งคำขอ) · payload เสีย → APPROVAL_PAYLOAD_INVALID', async () => {
-    const rows = [folderRow({ folderId: 9, folderName: '1HC - ลับมาก [1HC]', confidentialityLevel: 1 })];
+    const rows = [
+      folderRow({ folderId: 9, folderName: '1HC - ลับมาก [1HC]', confidentialityLevel: 1 }),
+    ];
     const a = make({ rows });
-    expect(await errorCode(a.svc.createAfterApproval(record(), admin()))).toBe('FOLDER_NAME_DUPLICATE');
+    expect(await errorCode(a.svc.createAfterApproval(record(), admin()))).toBe(
+      'FOLDER_NAME_DUPLICATE',
+    );
     expect(a.repo.called('insert')).toHaveLength(0);
     const b = make({ rows: [] });
     expect(await errorCode(b.svc.createAfterApproval(record({ payload: null }), admin()))).toBe(
@@ -621,7 +773,10 @@ describe('FoldersService — handler หลังอนุมัติ', () => {
     const { svc } = make({ rows: [] });
     const f = await svc.createAfterApproval(
       record({
-        payload: { remark: 'ParentFolderId=|OrgUnitId=1|FolderName=1HC - เก่า|FolderDepth=1|ConfidentialityLevel=1|InheritPermission=False' },
+        payload: {
+          remark:
+            'ParentFolderId=|OrgUnitId=1|FolderName=1HC - เก่า|FolderDepth=1|ConfidentialityLevel=1|InheritPermission=False',
+        },
       }),
       admin(),
     );
@@ -635,7 +790,9 @@ describe('FoldersService — handler หลังอนุมัติ', () => {
     expect(repo.called('softDeleteTree')[0].args).toEqual([2, approver.userId]);
     await svc.deleteAfterApproval(record({ requestType: 'DELETE_FOLDER', folderId: 2 }), approver);
     expect(repo.called('softDeleteTree')).toHaveLength(1);
-    expect((await logEvents(crud)).filter((e) => e.operation === 'DELETE_FOLDER_APPROVED')).toHaveLength(2);
+    expect(
+      (await logEvents(crud)).filter((e) => e.operation === 'DELETE_FOLDER_APPROVED'),
+    ).toHaveLength(2);
   });
 
   it('deleteAfterApproval: คำขอไม่ระบุโฟลเดอร์ → error', async () => {

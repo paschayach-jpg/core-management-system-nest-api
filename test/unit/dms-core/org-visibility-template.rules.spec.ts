@@ -87,7 +87,12 @@ describe('org-visibility.rules — การมองเห็นหน่วย
   });
 });
 
-const item = (id: number, parent: number | null, name: string, over: Partial<TemplateItemLike> = {}): TemplateItemLike => ({
+const item = (
+  id: number,
+  parent: number | null,
+  name: string,
+  over: Partial<TemplateItemLike> = {},
+): TemplateItemLike => ({
   itemId: id,
   parentItemId: parent,
   folderName: name,
@@ -100,7 +105,11 @@ const item = (id: number, parent: number | null, name: string, over: Partial<Tem
 describe('template.rules — แผนการสร้างโฟลเดอร์จากแม่แบบ', () => {
   it('เรียงแม่ก่อนลูกตาม SortOrder และนับความลึกต่อจากแม่', () => {
     const plan = planTemplateFolders(
-      [item(3, 1, 'ลูก B', { sortOrder: 2 }), item(2, 1, 'ลูก A', { sortOrder: 1 }), item(1, null, 'แม่')],
+      [
+        item(3, 1, 'ลูก B', { sortOrder: 2 }),
+        item(2, 1, 'ลูก A', { sortOrder: 1 }),
+        item(1, null, 'แม่'),
+      ],
       { parentDepth: 2, parentLevel: 3 },
     );
     expect(plan.map((p) => [p.folderName, p.depth, p.confidentialityLevel])).toEqual([
@@ -113,22 +122,31 @@ describe('template.rules — แผนการสร้างโฟลเดอ
 
   it('ลึกเกิน 10 → ปฏิเสธทั้งชุด (ไม่ข้ามเงียบ)', () => {
     expect(() =>
-      planTemplateFolders([item(1, null, 'a'), item(2, 1, 'b')], { parentDepth: 9, parentLevel: 4 }),
+      planTemplateFolders([item(1, null, 'a'), item(2, 1, 'b')], {
+        parentDepth: 9,
+        parentLevel: 4,
+      }),
     ).toThrow(/ลึกเกิน/);
   });
 
   it('ชื่อซ้ำในระดับเดียวกันถูกปฏิเสธ', () => {
     expect(() =>
-      planTemplateFolders([item(1, null, 'A'), item(2, null, ' a ')], { parentDepth: 1, parentLevel: 4 }),
+      planTemplateFolders([item(1, null, 'A'), item(2, null, ' a ')], {
+        parentDepth: 1,
+        parentLevel: 4,
+      }),
     ).toThrow(/ซ้ำกัน/);
   });
 
   it('รายการที่ระบุชั้นความลับเองต้องตรงกับโฟลเดอร์ปลายทาง', () => {
     expect(() =>
-      planTemplateFolders([item(1, null, 'A', { inheritPermission: false, confidentialityLevel: 1 })], {
-        parentDepth: 1,
-        parentLevel: 3,
-      }),
+      planTemplateFolders(
+        [item(1, null, 'A', { inheritPermission: false, confidentialityLevel: 1 })],
+        {
+          parentDepth: 1,
+          parentLevel: 3,
+        },
+      ),
     ).toThrow(/ไม่ตรงกับโฟลเดอร์ปลายทาง/);
     // เท่ากับของแม่ → ผ่าน และคง InheritPermission=false
     const ok = planTemplateFolders(
@@ -139,7 +157,9 @@ describe('template.rules — แผนการสร้างโฟลเดอ
   });
 
   it('รายการกำพร้า (แม่ไม่อยู่ในแม่แบบ) ไม่ถูกสร้าง · วงวนไม่ทำให้ค้าง', () => {
-    expect(planTemplateFolders([item(5, 99, 'กำพร้า')], { parentDepth: 1, parentLevel: 4 })).toEqual([]);
+    expect(
+      planTemplateFolders([item(5, 99, 'กำพร้า')], { parentDepth: 1, parentLevel: 4 }),
+    ).toEqual([]);
     expect(
       planTemplateFolders([item(1, 2, 'a'), item(2, 1, 'b')], { parentDepth: 1, parentLevel: 4 }),
     ).toEqual([]);

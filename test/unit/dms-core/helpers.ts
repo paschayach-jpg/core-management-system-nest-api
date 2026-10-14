@@ -142,7 +142,8 @@ export class FakeFolderRepo {
     this.rows.filter((r) => r.parentFolderId === parentId && !r.isDeleted);
   getRootsByOrgUnit = async (org: number) =>
     this.rows.filter((r) => r.parentFolderId === null && r.orgUnitId === org && !r.isDeleted);
-  getByOrgUnit = async (org: number) => this.rows.filter((r) => r.orgUnitId === org && !r.isDeleted);
+  getByOrgUnit = async (org: number) =>
+    this.rows.filter((r) => r.orgUnitId === org && !r.isDeleted);
   getAllActive = async () => this.rows.filter((r) => !r.isDeleted);
   getSiblings = async (parentId: number | null, org: number) =>
     this.rows.filter((r) => r.parentFolderId === parentId && r.orgUnitId === org && !r.isDeleted);
@@ -185,7 +186,10 @@ export class FakeFolderRepo {
   findExpiredDeletedRoots = async () => this.expiredRoots;
   listDeleted = async (q: unknown) => {
     this.rec('listDeleted', q);
-    return { items: this.rows.filter((r) => r.isDeleted), total: this.rows.filter((r) => r.isDeleted).length };
+    return {
+      items: this.rows.filter((r) => r.isDeleted),
+      total: this.rows.filter((r) => r.isDeleted).length,
+    };
   };
 
   insert = async (f: Record<string, unknown>) => {
@@ -238,7 +242,10 @@ export class FakeFolderRepo {
 }
 
 /** ตัวรวม CRUD-log ในหน่วยความจำ: events ล่าสุดหลัง drain */
-export async function logEvents(crud: { service: { drain(): Promise<void> }; sink: { events: unknown[] } }) {
+export async function logEvents(crud: {
+  service: { drain(): Promise<void> };
+  sink: { events: unknown[] };
+}) {
   await crud.service.drain();
   return crud.sink.events as {
     module: string;
@@ -320,7 +327,11 @@ export class FakeFileRepo {
       )
       .map((r) => r.originalFileName);
   namesExist = async (folderId: number, names: string[]) =>
-    names.filter((n) => this.rows.some((r) => r.folderId === folderId && r.fileStatus !== 3 && r.originalFileName === n));
+    names.filter((n) =>
+      this.rows.some(
+        (r) => r.folderId === folderId && r.fileStatus !== 3 && r.originalFileName === n,
+      ),
+    );
   versionsOf = async (folderId: number, name: string) =>
     this.rows.filter((r) => r.folderId === folderId && r.originalFileName === name);
 
