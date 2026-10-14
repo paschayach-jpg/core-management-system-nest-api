@@ -1,5 +1,6 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Readable } from 'node:stream';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
@@ -149,11 +150,16 @@ function resetMocks(): void {
 
 let app: INestApplication;
 let currentUser: UserContext;
+// โฟลเดอร์ชั่วคราวของเทสต์นี้เอง — ห้ามนับไฟล์ใน os.tmpdir() ตรงๆ เพราะ suite อื่นที่รันขนานเขียนไฟล์ชั่วคราวที่นั่นด้วย (ทำให้เทสต์ไม่นิ่ง)
+const uploadDir = mkdtempSync(join(tmpdir(), 'rgp-upload-test-'));
 
 beforeAll(async () => {
   const moduleRef = await Test.createTestingModule({
     imports: [
-      MulterModule.register({ storage: diskStorage({}), limits: { fileSize: 1024 * 1024 } }),
+      MulterModule.register({
+        storage: diskStorage({ destination: uploadDir }),
+        limits: { fileSize: 1024 * 1024 },
+      }),
     ],
     controllers: [
       ProjectsController,
@@ -207,6 +213,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await app?.close();
+  rmSync(uploadDir, { recursive: true, force: true });
 });
 
 beforeEach(() => {
@@ -521,7 +528,7 @@ describe('ความคืบหน้า / Task / เอกสาร / สม
 });
 
 describe('ไฟล์แนบ — อัปโหลด/ดาวน์โหลด', () => {
-  const tmpCount = () => readdirSync(tmpdir()).length;
+  const tmpCount = () => readdirSync(uploadDir).length;
 
   it('อัปโหลด multipart: อ่านเป็น buffer ส่งให้ service ด้วย folderId และลบไฟล์ชั่วคราว', async () => {
     mocks.attachments.upload.mockResolvedValueOnce([{ fileId: 100 }]);
@@ -599,6 +606,6 @@ describe('ไฟล์แนบ — อัปโหลด/ดาวน์โห�
     );
     expect(res.body.toString()).toBe('PDFDATA');
     expect(mocks.attachments.download).toHaveBeenCalledWith(8, 55, currentUser);
-    expect(existsSync(tmpdir())).toBe(true);
+    expect(existsSync(uploadDir)).toBe(true);
   });
 });
