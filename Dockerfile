@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # ── build: คอมไพล์ TypeScript ───────────────────────────────
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -9,13 +9,13 @@ COPY src ./src
 RUN npm run build
 
 # ── deps: เฉพาะ dependency สำหรับ production ────────────────
-FROM node:22-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # ── runtime: image สุดท้าย (ไม่มี source/devDependency, รันด้วยผู้ใช้ non-root) ──
-FROM node:22-alpine AS runtime
+FROM node:26-alpine AS runtime
 ENV NODE_ENV=production \
     TZ=Asia/Bangkok \
     PORT=3000
