@@ -555,6 +555,18 @@ describe('ไฟล์แนบ — อัปโหลด/ดาวน์โห�
     expect(tmpCount()).toBeLessThanOrEqual(before);
   });
 
+  it('validate query ไม่ผ่านหลัง multer เขียนไฟล์แล้ว → 400 และไฟล์ชั่วคราวไม่ค้าง', async () => {
+    const before = tmpCount();
+    await http()
+      .post('/rgp/projects/8/attachments/upload?folderId=abc')
+      .attach('files', Buffer.from('hello'), 'a.txt')
+      .expect(400);
+    // finalize ของ interceptor ลบแบบ async เล็กน้อยหลังตอบ
+    await new Promise((r) => setTimeout(r, 50));
+    expect(tmpCount()).toBeLessThanOrEqual(before);
+    expect(mocks.attachments.upload).not.toHaveBeenCalled();
+  });
+
   it('ผูกไฟล์เดิม: fileIds ต้องเป็นจำนวนเต็มบวก 1–50 ตัว', async () => {
     await http().post('/rgp/projects/8/attachments').send({ fileIds: [] }).expect(400);
     await http()

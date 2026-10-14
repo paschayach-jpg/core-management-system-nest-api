@@ -91,6 +91,8 @@ export interface SortableTask {
   createDate?: Date | string | null;
 }
 
+const cmp = (x: string, y: string): number => (x < y ? -1 : x > y ? 1 : 0);
+
 /** เรียง task หลักของ state: priority มากก่อน → วันกำหนดเสร็จ (ไม่มีวัน = ก่อน เหมือน SQL Server) → วันที่สร้าง */
 export function sortStateTasks<T extends SortableTask>(tasks: T[]): T[] {
   const key = (v: Date | string | null | undefined): string => toDateOnly(v) ?? '';
@@ -99,15 +101,8 @@ export function sortStateTasks<T extends SortableTask>(tasks: T[]): T[] {
   return [...tasks].sort(
     (a, b) =>
       (b.priority ?? 0) - (a.priority ?? 0) ||
-      key(a.dueDate).localeCompare(key(b.dueDate)) ||
+      cmp(key(a.dueDate), key(b.dueDate)) ||
       time(a.createDate) - time(b.createDate) ||
       a.taskId - b.taskId,
   );
 }
-
-export const PRIORITY_LABEL: Record<number, string> = {
-  1: 'Low',
-  2: 'Medium',
-  3: 'High',
-  4: 'Critical',
-};

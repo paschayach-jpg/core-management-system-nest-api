@@ -33,6 +33,7 @@ import {
   UploadAttachmentQueryDto,
 } from './dto/attachment.dto';
 import { ProjectAttachmentsService } from './project-attachments.service';
+import { UploadCleanupInterceptor } from './upload-cleanup.interceptor';
 import { withUploadedBuffers, type TempUploadedFile } from './upload.util';
 
 /** จำนวนไฟล์สูงสุดต่อการอัปโหลดหนึ่งครั้ง */
@@ -54,7 +55,7 @@ export class ProjectAttachmentsController {
   }
 
   @Post('upload')
-  @UseInterceptors(FilesInterceptor('files', MAX_FILES_PER_UPLOAD))
+  @UseInterceptors(FilesInterceptor('files', MAX_FILES_PER_UPLOAD), UploadCleanupInterceptor)
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
