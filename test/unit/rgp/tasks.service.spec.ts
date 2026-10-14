@@ -10,7 +10,7 @@ import { RunningNumber } from '../../../src/modules/rgp/entities/running-number.
 import { todayDateOnly } from '../../../src/modules/rgp/common/rgp-rules';
 import { fakeUser } from '../../helpers/stubs';
 import { makeHarness, seedProject, seedRunningNumber, type Harness } from './helpers/harness';
-import { MemoryManager } from './helpers/memory-db';
+import { MemoryManager, type EntityClass } from './helpers/memory-db';
 
 const officer = fakeUser({ adUserName: 'somchai', appRole: AppRole.Officer });
 const YY = String(new Date().getFullYear()).slice(-2);
@@ -334,7 +334,7 @@ describe('ProjectTasksService.updateStatus — เปลี่ยนสถาน
     const t = seedTask(h, states[0], { status: 'Todo', pctComplete: 0 });
     const insert = jest
       .spyOn(MemoryManager.prototype, 'insert')
-      .mockImplementation(async (entity: Function) => {
+      .mockImplementation(async (entity: EntityClass) => {
         if (entity === ProjectTaskStatusLog) throw new Error('log ล้ม');
         return { identifiers: [] };
       });

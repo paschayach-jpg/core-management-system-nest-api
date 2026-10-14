@@ -4,7 +4,6 @@ import { ProjectAuditLog } from '../../../src/modules/rgp/entities/project-audit
 import { ProjectDocWorkflow } from '../../../src/modules/rgp/entities/project-doc-workflow.entity';
 import { ProjectMember } from '../../../src/modules/rgp/entities/project-member.entity';
 import { ProjectNotifyLog } from '../../../src/modules/rgp/entities/project-notify-log.entity';
-import { ProjectProgress } from '../../../src/modules/rgp/entities/project-progress.entity';
 import { ProjectStateMember } from '../../../src/modules/rgp/entities/project-state-member.entity';
 import { ProjectState } from '../../../src/modules/rgp/entities/project-state.entity';
 import { ProjectTask } from '../../../src/modules/rgp/entities/project-task.entity';

@@ -31,7 +31,7 @@ import { StateMembersService } from '../../../../src/modules/rgp/states/state-me
 import { StateNotifyService } from '../../../../src/modules/rgp/states/state-notify.service';
 import { ProjectTasksService } from '../../../../src/modules/rgp/tasks/project-tasks.service';
 import { ProjectTemplatesService } from '../../../../src/modules/rgp/templates/project-templates.service';
-import { Employee } from '../../../../src/modules/shared/entities/employee.entity';
+import { UserAccount } from '../../../../src/modules/shared/entities/user-account.entity';
 import {
   LATEST_PROGRESS_BY_PROJECT_SQL,
   STATES_WITH_PROGRESS_SQL,
@@ -286,7 +286,7 @@ export function makeHarness(opts: HarnessOptions = {}) {
     repo(ProjectNotifyLog),
     repo(ProjectState),
     repo(Project),
-    repo(Employee) as never, // แทน UserAccount repo — ไม่ใช้ใน harness พื้นฐาน (เทสต์ notify ประกอบเอง)
+    repo(UserAccount),
     tasks,
     (opts.notifications ?? { send: async () => undefined }) as never,
   );

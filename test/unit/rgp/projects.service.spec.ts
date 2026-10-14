@@ -17,7 +17,7 @@ import { Employee } from '../../../src/modules/shared/entities/employee.entity';
 import { HrDepartment } from '../../../src/modules/shared/entities/hr-department.entity';
 import { fakeUser } from '../../helpers/stubs';
 import { makeHarness, seedProject, seedRunningNumber, type Harness } from './helpers/harness';
-import { MemoryManager } from './helpers/memory-db';
+import { MemoryManager, type EntityClass } from './helpers/memory-db';
 
 const YY = String(new Date().getFullYear()).slice(-2);
 const officer = fakeUser({ adUserName: 'somchai', appRole: AppRole.Officer });
@@ -324,7 +324,7 @@ describe('ProjectsService — audit สองทาง (RGP.t_project_audit_log 
     const h = setup();
     const insert = jest
       .spyOn(MemoryManager.prototype, 'insert')
-      .mockImplementation(async (entity: Function, row: unknown) => {
+      .mockImplementation(async (entity: EntityClass) => {
         if (entity === ProjectAuditLog) throw new Error('เขียน audit ไม่ได้');
         return { identifiers: [] };
       });
