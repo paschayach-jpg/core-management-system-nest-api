@@ -50,7 +50,10 @@ export interface DmsFilePort {
   openRead(user: UserContext, fileId: number): Promise<DmsFileReadHandle>;
 }
 
-/** อ่านไฟล์โดยไม่ตรวจสิทธิ์ผู้ใช้ — ใช้เฉพาะหลังตรวจสิทธิ์ด้วยวิธีอื่นแล้ว (เช่น เปิดไฟล์ผ่าน share token ที่ผ่านการตรวจ) */
+export const DMS_FILE_UNCHECKED_PORT = Symbol('DMS_FILE_UNCHECKED_PORT');
+
+/** อ่านไฟล์โดยไม่ตรวจสิทธิ์ผู้ใช้ — ใช้เฉพาะหลังตรวจสิทธิ์ด้วยวิธีอื่นแล้ว (เช่น เปิดไฟล์ผ่าน share token ที่ผ่านการตรวจ)
+ * DmsCoreModule provide token DMS_FILE_UNCHECKED_PORT (คนละตัวกับ DMS_FILE_PORT เพื่อให้ module ที่ไม่ควรข้ามสิทธิ์ไม่ได้ implement นี้โดยบังเอิญ) */
 export interface DmsFileUncheckedReadPort {
   openReadUnchecked(fileId: number): Promise<DmsFileReadHandle>;
 }
