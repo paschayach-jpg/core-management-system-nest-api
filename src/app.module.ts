@@ -11,6 +11,7 @@ import { LoggingModule } from './core/logging/logging.module';
 import { DatabaseModule } from './database';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { SharedModule } from './modules/shared/shared.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AuthModule } from './modules/auth/auth.module';
 
     // ── module ธุรกิจ (แยก service ตาม module) ──
     AuthModule,
+    SharedModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

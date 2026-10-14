@@ -129,4 +129,8 @@ export const MAIN_ENTITIES = [
 ];
 
 /** entities ของฐาน BUI_RG (ProjectDb) */
-export const PROJECT_ENTITIES = [MasterDocument, MasterDocumentType, RunningNumber];
+export const PROJECT_ENTITIES = [
+  MasterDocument,
+  MasterDocumentType,
+  RunningNumber,
+];

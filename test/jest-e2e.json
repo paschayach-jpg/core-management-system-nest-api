@@ -1,0 +1,9 @@
+{
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "testRegex": "test/e2e/.*\\.e2e-spec\\.ts$",
+  "transform": { "^.+\\.ts$": ["ts-jest", { "tsconfig": "tsconfig.json", "diagnostics": { "ignoreCodes": [151001] } }] },
+  "setupFiles": ["<rootDir>/test/setup.ts"],
+  "testTimeout": 30000
+}

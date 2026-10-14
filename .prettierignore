@@ -1,0 +1,5 @@
+*.generated.ts
+src/modules/*/entities/
+docs/reference/
+dist/
+coverage/
