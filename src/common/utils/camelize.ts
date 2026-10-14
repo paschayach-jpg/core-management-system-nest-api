@@ -18,7 +18,8 @@ export function camelKey(key: string): string {
 /** แปลงชื่อคอลัมน์ PascalCase จาก Stored Procedure เป็น camelCase (รองรับ array) — ค่า Date/Buffer ไม่ถูกแตะ */
 export function camelizeKeys<T = Record<string, unknown>>(row: unknown): T {
   if (Array.isArray(row)) return row.map((r) => camelizeKeys(r)) as unknown as T;
-  if (row === null || typeof row !== 'object' || row instanceof Date || Buffer.isBuffer(row)) return row as T;
+  if (row === null || typeof row !== 'object' || row instanceof Date || Buffer.isBuffer(row))
+    return row as T;
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(row as Record<string, unknown>)) out[camelKey(k)] = v;
   return out as T;

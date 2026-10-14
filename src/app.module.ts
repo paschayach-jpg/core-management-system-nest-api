@@ -11,7 +11,11 @@ import { LoggingModule } from './core/logging/logging.module';
 import { DatabaseModule } from './database';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DmsModule } from './modules/dms/dms.module';
+import { KmsModule } from './modules/kms/kms.module';
+import { RgpModule } from './modules/rgp/rgp.module';
 import { SharedModule } from './modules/shared/shared.module';
+import { WfeModule } from './modules/wfe/wfe.module';
 
 @Module({
   imports: [
@@ -34,6 +38,10 @@ import { SharedModule } from './modules/shared/shared.module';
     // ── module ธุรกิจ (แยก service ตาม module) ──
     AuthModule,
     SharedModule,
+    DmsModule,
+    KmsModule,
+    RgpModule,
+    WfeModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
