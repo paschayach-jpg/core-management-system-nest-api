@@ -1,5 +1,6 @@
 import type { ApprovalRequestType } from '../../../common/constants/enums';
 import type { UserContext } from '../../../common/interfaces/user-context';
+import type { TransactionScope } from '../../../database/transaction-runner.service';
 
 /**
  * สัญญากลางระหว่างงานอนุมัติ (DmsApprovalsModule) กับแกน DMS (DmsCoreModule)
@@ -53,9 +54,21 @@ export interface DmsApprovalPort {
 /** ผลข้างเคียงเมื่อคำขอชนิดหนึ่งได้รับอนุมัติ — Core ลงทะเบียนสำหรับ CREATE_HC, DELETE_FOLDER, CHANGE_PERMISSION */
 export interface ApprovalOutcomeHandler {
   readonly requestType: ApprovalRequestType;
-  /** รันใน transaction เดียวกับการเปลี่ยนสถานะคำขอ — โยน error = rollback ทั้งคำขอ */
-  onApproved(request: ApprovalRecord, approver: UserContext): Promise<void>;
-  onRejected?(request: ApprovalRecord, rejector: UserContext): Promise<void>;
+  /**
+   * รันใน transaction เดียวกับการเปลี่ยนสถานะคำขอ — โยน error = rollback ทั้งคำขอ
+   * ผู้เรียก (DmsApprovalsModule) **ต้องส่ง `scope`** ของ transaction ที่เปิดอยู่ เพื่อให้ผลข้างเคียงอยู่ใน transaction เดียวกัน
+   * (ถ้าไม่ส่ง handler จะเปิด transaction ของตัวเอง ซึ่งแยกจากการอนุมัติ)
+   */
+  onApproved(
+    request: ApprovalRecord,
+    approver: UserContext,
+    scope?: TransactionScope,
+  ): Promise<void>;
+  onRejected?(
+    request: ApprovalRecord,
+    rejector: UserContext,
+    scope?: TransactionScope,
+  ): Promise<void>;
 }
 
 export interface ApprovalHandlerRegistry {
