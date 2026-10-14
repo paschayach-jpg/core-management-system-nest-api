@@ -34,17 +34,18 @@ function make() {
   const notif = fakeNotifications();
   const lookup = fakeLookup(db);
   const sharesStore = fakeSharesStore(db);
+  const tx = fakeTx(db);
   const svc = new ApprovalsService(
     crud,
     fakeApprovalsStore(db) as never,
     lookup as never,
-    fakeTx(db) as never,
+    tx as never,
     notif as never,
     registry,
     new ShareApprovalOutcomes(sharesStore as never, lookup as never),
     allowAllPerm() as never,
   );
-  return { db, svc, registry, notif, sink, crud };
+  return { db, svc, registry, notif, sink, crud, tx };
 }
 
 const handler = (
@@ -191,6 +192,88 @@ describe('ApprovalsService — ลงมติ + ผลข้างเคีย�
     expect(await codeOf(svc.approveStep(s.stepId, 'ok', ADMIN))).toBe('FOLDER_HAS_FILES');
     expect(db.state.requests[0].requestStatus).toBe(1);
     expect(db.state.steps[0].stepStatus).toBe(1);
+  });
+
+  it('onApproved ได้รับ scope ของ transaction ที่เปิดอยู่ (ตัวเดียวกับที่ใช้เปลี่ยนสถานะคำขอ ยังไม่ commit) — ไม่ใช่ scope ของรอบก่อนหน้า', async () => {
+    const { db, svc, registry, tx } = make();
+    const seen: {
+      scope: unknown;
+      open: boolean;
+      requestStatusInTx: number | undefined;
+    }[] = [];
+    registry.register(
+      handler('CHANGE_PERMISSION', {
+        onApproved: async (r, _by, scope) => {
+          seen.push({
+            scope,
+            open: tx.isOpen(),
+            requestStatusInTx: db.state.requests.find((x) => x.requestId === r.requestId)
+              ?.requestStatus,
+          });
+        },
+      }).h,
+    );
+    const { s1, s2 } = twoStepRequest(db);
+
+    await svc.approveStep(s1.stepId, null as never, MGR_A); // ยังไม่จบ → ไม่เรียก handler
+    expect(seen).toHaveLength(0);
+    await svc.approveStep(s2.stepId, 'ok', MGR_B);
+
+    expect(seen).toHaveLength(1);
+    expect(tx.scopes).toHaveLength(2); // 1 transaction ต่อ 1 การลงมติ
+    expect(seen[0].scope).toBeDefined();
+    expect(seen[0].scope).toBe(tx.scopes[1]); // identity เดียวกับที่ TransactionRunner เปิด
+    expect(seen[0].scope).not.toBe(tx.scopes[0]);
+    expect(seen[0].scope).toHaveProperty('queryRunner'); // เป็น TransactionScope เต็ม ไม่ใช่แค่ manager
+    expect(seen[0].open).toBe(true); // handler ทำงานก่อน commit
+    expect(seen[0].requestStatusInTx).toBe(2); // เห็นสถานะ Approved ของ transaction เดียวกัน
+    expect(tx.isOpen()).toBe(false); // commit แล้วหลัง handler กลับ
+  });
+
+  it('onRejected ได้รับ scope ของ transaction ที่เปิดอยู่เช่นกัน', async () => {
+    const { db, svc, registry, tx } = make();
+    const seen: { scope: unknown; open: boolean }[] = [];
+    registry.register(
+      handler('CHANGE_PERMISSION', {
+        onRejected: async (_r, _by, scope) => {
+          seen.push({ scope, open: tx.isOpen() });
+        },
+      }).h,
+    );
+    const { s1 } = twoStepRequest(db);
+
+    await svc.rejectStep(s1.stepId, 'ไม่เหมาะสม', MGR_A);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].scope).toBe(tx.scopes.at(-1));
+    expect(seen[0].open).toBe(true);
+  });
+
+  it('handler ที่เขียนผ่าน scope แล้วโยน error → การเขียนของ handler และสถานะคำขอถูก rollback ด้วยกัน', async () => {
+    const { db, svc, registry, tx } = make();
+    let received: unknown;
+    registry.register(
+      handler('CHANGE_PERMISSION', {
+        onApproved: async (_r, _by, scope) => {
+          received = scope;
+          // จำลองการเขียนของ Core ผ่าน scope เดียวกัน (fake เก็บใน state ที่ snapshot/rollback ร่วมกัน)
+          db.state.filePermissions.push({ writtenByHandler: true } as never);
+          throw new Error('ล้มหลังเขียนไปแล้ว');
+        },
+      }).h,
+    );
+    const { s1, s2 } = twoStepRequest(db);
+    await svc.approveStep(s1.stepId, null as never, MGR_A);
+    const before = db.state.filePermissions.length;
+
+    await expect(svc.approveStep(s2.stepId, 'ok', MGR_B)).rejects.toMatchObject({
+      response: { code: 'APPROVAL_SIDE_EFFECT_FAILED' },
+    });
+
+    expect(received).toBe(tx.scopes.at(-1)); // handler ได้ scope ที่เปิดอยู่ (assert นอก handler เพราะ error ใน handler ถูกห่อเป็น SIDE_EFFECT_FAILED)
+    expect(db.state.filePermissions).toHaveLength(before);
+    expect(db.state.requests[0].requestStatus).toBe(1);
+    expect(tx.isOpen()).toBe(false);
   });
 
   it.each(['CREATE_HC', 'DELETE_FOLDER', 'CHANGE_PERMISSION'])(

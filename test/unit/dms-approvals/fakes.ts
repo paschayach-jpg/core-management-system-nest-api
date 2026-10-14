@@ -192,15 +192,35 @@ export class FakeDb {
   }
 }
 
-/** แทน TransactionRunner: ล้มเหลวกลางทาง → rollback */
+/** scope จำลองที่มีรูปเดียวกับ TransactionScope จริง (queryRunner + manager + sp) */
+export interface FakeScope {
+  queryRunner: { isTransactionActive: boolean };
+  manager: object;
+  sp: { queryRunner: { isTransactionActive: boolean } };
+}
+
+/**
+ * แทน TransactionRunner: ล้มเหลวกลางทาง → rollback
+ * เก็บ scope ที่เปิดไว้ใน `scopes` (ตัวล่าสุด = ตัวที่กำลังใช้) และบอกได้ว่า transaction ยังเปิดอยู่ไหม (`isOpen`)
+ * เพื่อให้เทสต์พิสูจน์ได้ว่า handler ของ Core ถูกเรียกพร้อม scope ของ transaction ที่เปิดอยู่จริง
+ */
 export function fakeTx(db: FakeDb) {
+  const scopes: FakeScope[] = [];
   return {
-    run: async <T>(work: (scope: { manager: object; sp: object }) => Promise<T>): Promise<T> => {
+    scopes,
+    isOpen: () => scopes.at(-1)?.queryRunner.isTransactionActive === true,
+    run: async <T>(work: (scope: FakeScope) => Promise<T>): Promise<T> => {
       const snap = db.snapshot();
+      const queryRunner = { isTransactionActive: true };
+      const scope: FakeScope = { queryRunner, manager: {}, sp: { queryRunner } };
+      scopes.push(scope);
       try {
-        return await work({ manager: {}, sp: {} });
+        const result = await work(scope);
+        queryRunner.isTransactionActive = false; // commit
+        return result;
       } catch (err) {
         db.restore(snap);
+        queryRunner.isTransactionActive = false; // rollback
         throw err;
       }
     },

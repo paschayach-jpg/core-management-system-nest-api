@@ -14,7 +14,10 @@ import {
 import type { UserContext } from '../../../../common/interfaces/user-context';
 import { CrudLogService } from '../../../../core/crud-log/crud-log.service';
 import { CrudLoggedService } from '../../../../core/crud-log/crud-logged.service';
-import { TransactionRunner } from '../../../../database/transaction-runner.service';
+import {
+  TransactionRunner,
+  type TransactionScope,
+} from '../../../../database/transaction-runner.service';
 import { PermissionEvaluator } from '../../permissions/permission-evaluator';
 import type {
   ApprovalRecord,
@@ -635,7 +638,7 @@ export class ApprovalsService extends CrudLoggedService {
 
   /** ผลข้างเคียงเมื่ออนุมัติจบ — โยน error = rollback */
   private async applyApprovedOutcome(
-    t: Tx,
+    t: TransactionScope,
     request: ApprovalRequestRow,
     payload: Record<string, unknown> | null,
     type: string,
@@ -686,7 +689,8 @@ export class ApprovalsService extends CrudLoggedService {
     }
     if (!handler) return; // ชนิดอื่นๆ (เช่น DOWNLOAD_FILE) ไม่มีผลข้างเคียง
     try {
-      await handler.onApproved(this.toRecord(request, type, payload), approver);
+      // ส่ง scope ของ transaction ที่เปิดอยู่เสมอ — ผลข้างเคียงของ Core ต้องอยู่ใน transaction เดียวกับการเปลี่ยนสถานะคำขอ
+      await handler.onApproved(this.toRecord(request, type, payload), approver, t);
     } catch (err) {
       throw this.wrapSideEffectError(err, type, request.requestId);
     }
@@ -710,7 +714,7 @@ export class ApprovalsService extends CrudLoggedService {
   }
 
   private async applyRejectedOutcome(
-    t: Tx,
+    t: TransactionScope,
     request: ApprovalRequestRow,
     payload: Record<string, unknown> | null,
     type: string,
@@ -739,7 +743,7 @@ export class ApprovalsService extends CrudLoggedService {
     const handler = this.handlers.get(type as ApprovalRequestType);
     if (!handler?.onRejected) return;
     try {
-      await handler.onRejected(this.toRecord(request, type, payload), rejecter);
+      await handler.onRejected(this.toRecord(request, type, payload), rejecter, t);
     } catch (err) {
       throw this.wrapSideEffectError(err, type, request.requestId);
     }
