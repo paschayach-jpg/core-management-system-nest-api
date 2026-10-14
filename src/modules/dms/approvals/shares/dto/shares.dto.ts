@@ -8,7 +8,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  Matches,
   Max,
   MaxLength,
   Min,
@@ -233,12 +232,14 @@ export class ShareAccessLogDto {
 
 // ── Public (ผู้ใช้ภายนอก) ────────────────────────────────────
 
-export const GUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
+/**
+ * token ในลิงก์ — ตรวจรูปแบบ GUID ใน service (ไม่ตรวจที่ DTO) เพื่อให้ token ผิดรูปแบบกับ token ที่ไม่มีในระบบ
+ * ได้คำตอบเดียวกัน (403 ข้อความทั่วไป) ไม่ใช่ 400 ที่บอกว่า "รูปแบบผิด"
+ */
 export class PublicTokenParamDto {
   @ApiProperty({ description: 'token ของลิงก์แชร์ (GUID)' })
   @IsString()
-  @Matches(GUID_PATTERN)
+  @MaxLength(64)
   token: string;
 }
 
