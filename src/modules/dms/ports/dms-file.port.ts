@@ -49,3 +49,8 @@ export interface DmsFilePort {
   /** เปิดอ่านไฟล์เพื่อดาวน์โหลด (ตรวจสิทธิ์ให้) */
   openRead(user: UserContext, fileId: number): Promise<DmsFileReadHandle>;
 }
+
+/** อ่านไฟล์โดยไม่ตรวจสิทธิ์ผู้ใช้ — ใช้เฉพาะหลังตรวจสิทธิ์ด้วยวิธีอื่นแล้ว (เช่น เปิดไฟล์ผ่าน share token ที่ผ่านการตรวจ) */
+export interface DmsFileUncheckedReadPort {
+  openReadUnchecked(fileId: number): Promise<DmsFileReadHandle>;
+}

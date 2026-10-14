@@ -46,6 +46,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "compression": "^1.8.1",
+    "exceljs": "^4.4.0",
     "helmet": "^8.3.0",
     "mssql": "^11.0.2",
     "nestjs-cls": "^6.3.1",
