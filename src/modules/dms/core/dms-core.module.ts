@@ -1,4 +1,4 @@
-import { Inject, Logger, Module, OnModuleInit, Optional } from '@nestjs/common';
+import { Global, Inject, Logger, Module, OnModuleInit, Optional } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { randomUUID } from 'node:crypto';
@@ -43,6 +43,9 @@ import { UserOrgVisibilityService } from './visibility/user-org-visibility.servi
  * - ลงทะเบียน handler ของ CREATE_HC / DELETE_FOLDER / CHANGE_PERMISSION กับ `DMS_APPROVAL_HANDLERS` ตอนเริ่มระบบ
  * - อัปโหลดแบบ multipart ผ่าน multer diskStorage (ไฟล์ชั่วคราวใน tmp ไม่เก็บทั้งไฟล์ใน memory) ขนาดตาม STORAGE_MAX_UPLOAD_MB (สูงสุด 100 MB)
  */
+// @Global เพราะ DmsApprovalsModule (ลิงก์แชร์สาธารณะ) ต้องฉีด DMS_FILE_UNCHECKED_PORT โดยไม่ import module นี้ (กัน module วนกัน)
+// ปลอดภัย: module นี้ export เฉพาะ token ของ port สองตัว ไม่ได้เปิด service ภายในออกสู่ทั้งแอป
+@Global()
 @Module({
   imports: [
     PermissionsModule,
