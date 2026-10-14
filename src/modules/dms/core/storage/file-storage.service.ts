@@ -314,6 +314,14 @@ export class FileStorageService extends CrudLoggedService {
   }
 
   /**
+   * ปิด stream ที่ยังไม่ได้ส่งต่อให้ใคร โดยไม่ให้ 'error' ที่ตามมา (เช่น เปิดไฟล์ไม่ได้เพราะถูกลบพอดี) กลายเป็น uncaught exception
+   */
+  closeQuietly(stream: Readable): void {
+    stream.on('error', () => undefined);
+    stream.destroy();
+  }
+
+  /**
    * ครอบ stream ด้วยการคำนวณ SHA-256 ระหว่างส่ง แล้วเรียก `onDone` เมื่อจบ (ตรวจความสมบูรณ์โดยไม่ต้องอ่านไฟล์ซ้ำทั้งก้อนเหมือนระบบเดิม)
    * หมายเหตุ: ส่วนหัวตอบกลับถูกส่งไปแล้ว จึงทำได้แค่แจ้ง/บันทึกเมื่อพบว่าไม่ตรง
    */

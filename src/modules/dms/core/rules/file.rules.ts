@@ -44,15 +44,21 @@ export const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
 // eslint-disable-next-line no-control-regex
 const INVALID_FILE_NAME = /[\\/:*?"<>|\u0000-\u001f]/;
 
-/** นามสกุลตัวพิมพ์เล็กพร้อมจุด ('' ถ้าไม่มี) */
-export function extensionOf(name: string): string {
+/** นามสกุลตามตัวพิมพ์เดิมพร้อมจุด ('' ถ้าไม่มี) */
+export function rawExtensionOf(name: string): string {
   const base = name.slice(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
   const i = base.lastIndexOf('.');
-  return i <= 0 ? '' : base.slice(i).toLowerCase();
+  return i <= 0 ? '' : base.slice(i);
 }
 
+/** นามสกุลตัวพิมพ์เล็กพร้อมจุด ('' ถ้าไม่มี) — ใช้เทียบ/ตรวจชนิด */
+export function extensionOf(name: string): string {
+  return rawExtensionOf(name).toLowerCase();
+}
+
+/** ชื่อที่ตัดนามสกุลออก (คงตัวพิมพ์เดิม) */
 export function baseNameOf(name: string): string {
-  const ext = extensionOf(name);
+  const ext = rawExtensionOf(name);
   return ext ? name.slice(0, name.length - ext.length) : name;
 }
 
@@ -124,8 +130,8 @@ export function mimeTypeFor(ext: string): string {
 export function resolveCopyName(requested: string, existingNames: readonly string[]): string {
   const taken = new Set(existingNames.map((n) => n.toLowerCase()));
   if (!taken.has(requested.toLowerCase())) return requested;
-  const ext = extensionOf(requested);
-  const base = ext ? requested.slice(0, requested.length - ext.length) : requested;
+  const ext = rawExtensionOf(requested);
+  const base = baseNameOf(requested);
   const prefix = `${base} copy`.toLowerCase();
   let counter = existingNames.filter((n) => n.toLowerCase().startsWith(prefix)).length + 1;
   let candidate: string;
@@ -145,7 +151,7 @@ export function buildStoredFileName(
   now: Date = new Date(),
   rand: () => string = () => randomBytes(3).toString('hex'),
 ): string {
-  const ext = extensionOf(originalName);
+  const ext = rawExtensionOf(originalName);
   const base = baseNameOf(originalName)
     // eslint-disable-next-line no-control-regex
     .replace(/[\\/:*?"<>|\u0000-\u001f\s]+/g, '_')

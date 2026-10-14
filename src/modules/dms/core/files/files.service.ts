@@ -447,7 +447,7 @@ export class FilesService extends CrudLoggedService {
             await this.approvals.consumeDownload(user, approvalId); // ใช้ได้ครั้งเดียว
           }
         } catch (err) {
-          handle.stream.destroy();
+          this.storage.closeQuietly(handle.stream);
           throw err;
         }
         return {
@@ -501,7 +501,7 @@ export class FilesService extends CrudLoggedService {
       physicalPath: file.physicalPath,
     });
     if (String(handle.sizeBytes) !== file.fileSizeBytes) {
-      handle.stream.destroy();
+      this.storage.closeQuietly(handle.stream);
       this.logger.error(
         `ขนาดไฟล์ ${file.fileId} บนที่จัดเก็บ (${handle.sizeBytes}) ไม่ตรงกับ DB (${file.fileSizeBytes})`,
       );
@@ -693,11 +693,9 @@ export class FilesService extends CrudLoggedService {
           await this.quota?.validateBatch(dest.orgUnitId, [Number(file.fileSizeBytes)]);
         }
 
-        const taken = await this.files.activeNamesStartingWith(
-          dest.folderId,
-          baseNameOf(file.originalFileName),
-        );
-        const finalName = resolveCopyName(file.originalFileName, taken);
+        const oldName = file.originalFileName;
+        const taken = await this.files.activeNamesStartingWith(dest.folderId, baseNameOf(oldName));
+        const finalName = resolveCopyName(oldName, taken);
 
         // ย้ายไฟล์กายภาพ (ถ้ามี) ไปโครง <org>/<folder>/ ของปลายทาง
         const from = await this.storage.locate({
@@ -743,7 +741,7 @@ export class FilesService extends CrudLoggedService {
           }
           throw err;
         }
-        return finalName !== file.originalFileName ? finalName : undefined;
+        return finalName !== oldName ? finalName : undefined;
       },
     );
   }
