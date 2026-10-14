@@ -2,13 +2,13 @@
 
 เอกสารชุดนี้รวบรวมสิ่งที่ต้องรู้ก่อนเขียน API แทนระบบ `core-management-system` โดยแยกเป็น 4 module: **DMS, KMS, RGP, WFE** (RGP = Project; ในโค้ดสะกด RGP) + ส่วน **Shared**
 
-> ไฟล์หลักที่ใช้เป็น **tasklist** คือ [`../../NESTJS_API_TASKLIST.md`](../../NESTJS_API_TASKLIST.md) (ราย module → ราย table → ราย repository method)
+> ไฟล์หลักที่ใช้เป็น **tasklist** คือ [`NESTJS_API_TASKLIST.md`](NESTJS_API_TASKLIST.md) (ราย module → ราย table → ราย repository method)
 
 ## ลำดับอ่านที่แนะนำ
 
 | # | ไฟล์ | ใช้ทำอะไร |
 |--:|---|---|
-| 1 | [`../../NESTJS_API_TASKLIST.md`](../../NESTJS_API_TASKLIST.md) | ภาพรวม ตารางที่ module ใช้ CRUD ลำดับงาน ภาคผนวก (dead code, connection) |
+| 1 | [`NESTJS_API_TASKLIST.md`](NESTJS_API_TASKLIST.md) | ภาพรวม ตารางที่ module ใช้ CRUD ลำดับงาน ภาคผนวก (dead code, connection) |
 | 2 | [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) | **ปิดให้ครบก่อนเริ่มเขียนโค้ด** — DDL ที่ขาด, คำถามขอบเขต, ข้อบกพร่องในโค้ดเดิม, การตัดสินใจสถาปัตยกรรม |
 | 3 | [`04-business-rules.md`](04-business-rules.md) | กฎธุรกิจที่ต้องพอร์ต (สิทธิ์, approval, share, quota, KMS import, RGP progress, WFE) |
 | 4 | [`06-service-use-cases.md`](06-service-use-cases.md) | Service method → ตาราง: ใช้ออกแบบ endpoint ระดับ use case + guard/audit ที่สกัดได้ |
@@ -17,7 +17,7 @@
 | 7 | [`03-enums-lookups.md`](03-enums-lookups.md) | Enum และจุดที่โค้ดกับ DB ไม่ตรงกัน |
 | 8 | [`05-cross-cutting.md`](05-cross-cutting.md) | Auth, audit, notification, file storage, config, jobs, transaction, cache, integration |
 
-ข้อมูลดิบที่ใช้อ้างอิงอยู่ที่ [`../../db-export/`](../../db-export/) (ผล export จาก DB จริงที่ทีมส่งมา: DDL, FK, index, CHECK, SP definition, SP dependency)
+ข้อมูลดิบที่ใช้อ้างอิงอยู่ที่ [`../db-export/`](../db-export/) (ผล export จาก DB จริงที่ทีมส่งมา: DDL, FK, index, CHECK, SP definition, SP dependency)
 
 ## วิธีจัดทำ (เพื่อให้ตรวจซ้ำได้)
 

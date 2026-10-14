@@ -59,6 +59,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'รายละเอียดผู้ใช้ — Manager/Admin' })
   @MinRole(AppRole.Manager)
   @ApiOkResponse({ type: UserSummaryDto })
   get(@Param('id', ParseIntPipe) id: number): Promise<UserSummaryDto> {

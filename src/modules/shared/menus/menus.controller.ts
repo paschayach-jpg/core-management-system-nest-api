@@ -41,6 +41,7 @@ export class MenusController {
   }
 
   @Get('statistics')
+  @ApiOperation({ summary: 'สถิติเมนู (จำนวนทั้งหมด/ใช้งาน/ตามบทบาท) — Admin' })
   @MinRole(AppRole.Admin)
   @ApiOkResponse({ type: MenuStatisticsDto })
   statistics(): Promise<MenuStatisticsDto> {
@@ -60,6 +61,7 @@ export class MenusController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'สร้างเมนู — Admin' })
   @MinRole(AppRole.Admin)
   create(@Body() dto: UpsertMenuDto, @CurrentUser() admin: UserContext): Promise<MenuItem> {
     return this.service.create(dto, admin);
@@ -74,6 +76,7 @@ export class MenusController {
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'แก้ไขเมนู (ส่งค่าทั้งก้อน) — Admin' })
   @MinRole(AppRole.Admin)
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -84,6 +87,7 @@ export class MenusController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'ลบเมนู — Admin' })
   @MinRole(AppRole.Admin)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {

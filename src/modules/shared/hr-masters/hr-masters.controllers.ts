@@ -57,15 +57,18 @@ export class HrDivisionsController {
     return this.service.list(q);
   }
   @Get(':id')
+  @ApiOperation({ summary: 'ดูรายละเอียดฝ่าย' })
   get(@Param('id', ParseIntPipe) id: number): Promise<HrDivision> {
     return this.service.get(id);
   }
   @Post()
+  @ApiOperation({ summary: 'สร้างฝ่าย — Admin' })
   @MinRole(AppRole.Admin)
   create(@Body() dto: CreateDivisionDto): Promise<HrDivision> {
     return this.service.create(dto);
   }
   @Patch(':id')
+  @ApiOperation({ summary: 'แก้ไขฝ่าย — Admin' })
   @MinRole(AppRole.Admin)
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -74,6 +77,7 @@ export class HrDivisionsController {
     return this.service.update(id, dto);
   }
   @Delete(':id')
+  @ApiOperation({ summary: 'ลบฝ่าย — Admin' })
   @MinRole(AppRole.Admin)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
@@ -94,15 +98,18 @@ export class HrDepartmentsController {
     return this.service.list(q);
   }
   @Get(':id')
+  @ApiOperation({ summary: 'ดูรายละเอียดแผนก' })
   get(@Param('id', ParseIntPipe) id: number): Promise<HrDepartment> {
     return this.service.get(id);
   }
   @Post()
+  @ApiOperation({ summary: 'สร้างแผนก — Admin' })
   @MinRole(AppRole.Admin)
   create(@Body() dto: CreateDepartmentDto): Promise<HrDepartment> {
     return this.service.create(dto);
   }
   @Patch(':id')
+  @ApiOperation({ summary: 'แก้ไขแผนก — Admin' })
   @MinRole(AppRole.Admin)
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -111,6 +118,7 @@ export class HrDepartmentsController {
     return this.service.update(id, dto);
   }
   @Delete(':id')
+  @ApiOperation({ summary: 'ลบแผนก — Admin' })
   @MinRole(AppRole.Admin)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
@@ -131,15 +139,18 @@ export class HrPositionsController {
     return this.service.list(q);
   }
   @Get(':id')
+  @ApiOperation({ summary: 'ดูรายละเอียดตำแหน่งงาน' })
   get(@Param('id', ParseIntPipe) id: number): Promise<HrPosition> {
     return this.service.get(id);
   }
   @Post()
+  @ApiOperation({ summary: 'สร้างตำแหน่งงาน — Admin' })
   @MinRole(AppRole.Admin)
   create(@Body() dto: CreatePositionDto): Promise<HrPosition> {
     return this.service.create(dto);
   }
   @Patch(':id')
+  @ApiOperation({ summary: 'แก้ไขตำแหน่งงาน — Admin' })
   @MinRole(AppRole.Admin)
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -148,6 +159,7 @@ export class HrPositionsController {
     return this.service.update(id, dto);
   }
   @Delete(':id')
+  @ApiOperation({ summary: 'ลบตำแหน่งงาน — Admin' })
   @MinRole(AppRole.Admin)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
@@ -168,15 +180,18 @@ export class HrPositionLevelsController {
     return this.service.list(q);
   }
   @Get(':levelCode')
+  @ApiOperation({ summary: 'ดูรายละเอียดระดับตำแหน่ง' })
   get(@Param('levelCode') levelCode: string): Promise<HrPositionLevel> {
     return this.service.get(levelCode);
   }
   @Post()
+  @ApiOperation({ summary: 'สร้างระดับตำแหน่ง — Admin' })
   @MinRole(AppRole.Admin)
   create(@Body() dto: CreatePositionLevelDto): Promise<HrPositionLevel> {
     return this.service.create(dto);
   }
   @Patch(':levelCode')
+  @ApiOperation({ summary: 'แก้ไขระดับตำแหน่ง — Admin' })
   @MinRole(AppRole.Admin)
   update(
     @Param('levelCode') levelCode: string,
@@ -185,6 +200,7 @@ export class HrPositionLevelsController {
     return this.service.update(levelCode, dto);
   }
   @Delete(':levelCode')
+  @ApiOperation({ summary: 'ลบระดับตำแหน่ง — Admin' })
   @MinRole(AppRole.Admin)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('levelCode') levelCode: string): Promise<void> {
@@ -205,11 +221,13 @@ export class HrPositionMappingsController {
     return this.service.listWithNames(departmentId ? Number(departmentId) : undefined);
   }
   @Post()
+  @ApiOperation({ summary: 'สร้างการผูกตำแหน่งกับฝ่าย/แผนก — Admin' })
   @MinRole(AppRole.Admin)
   create(@Body() dto: CreatePositionMappingDto): Promise<HrPositionMapping> {
     return this.service.create(dto);
   }
   @Patch(':id')
+  @ApiOperation({ summary: 'แก้ไขการผูกตำแหน่งกับฝ่าย/แผนก — Admin' })
   @MinRole(AppRole.Admin)
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -218,6 +236,7 @@ export class HrPositionMappingsController {
     return this.service.update(id, dto);
   }
   @Delete(':id')
+  @ApiOperation({ summary: 'ลบการผูกตำแหน่งกับฝ่าย/แผนก — Admin' })
   @MinRole(AppRole.Admin)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
