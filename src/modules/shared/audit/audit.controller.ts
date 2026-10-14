@@ -20,7 +20,11 @@ export class AuditController {
   }
 
   @Get('workflow-instances/:instanceId')
-  @ApiOperation({ summary: 'ประวัติ audit ของ workflow instance (สำหรับหน้ารายละเอียด workflow)' })
+  @MinRole(AppRole.Manager)
+  @ApiOperation({
+    summary:
+      'ประวัติ audit ของ workflow instance (Manager/Admin) — ผู้ใช้ทั่วไปดูผ่าน GET /wfe/instances/:id/history ที่ตรวจสิทธิ์ดู instance แล้ว',
+  })
   byWorkflowInstance(
     @Param('instanceId', ParseIntPipe) instanceId: number,
   ): Promise<AuditLogRow[]> {

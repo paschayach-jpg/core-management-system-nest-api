@@ -19,7 +19,7 @@ module `auth` (ยืนยันตัวตน) และ `shared` (สิ่�
 | ค่าตั้งระบบ | `GET /system-config[/:key]` · `PUT /system-config/:key` | Admin | `ConfigManager` + `dbo.SystemConfig` |
 | แจ้งเตือน | `GET /notifications` · `/unread-count` · `POST /:id/read` · `POST /read-all` | เจ้าของ | (inbox ใหม่) — เดิมมีแต่ INSERT |
 | Audit | `GET /audit-logs` | Manager+ | `AuditService.Query` (เดิม `AppRole < 3` ห้าม) |
-| Audit | `GET /audit-logs/workflow-instances/:id` | ทุกคนที่ login | `GetAuditLogsByWorkflowInstance` |
+| Audit | `GET /audit-logs/workflow-instances/:id` | Manager+ (ผู้ใช้ทั่วไปใช้ `GET /wfe/instances/:id/history`) | `GetAuditLogsByWorkflowInstance` — เดิมไม่ตรวจสิทธิ์ ใครก็อ่าน audit ของ workflow ใดก็ได้ |
 | (provider) | `NotificationsService.send()`, `SystemConfigService.get*()` | module อื่นเรียกใช้ | `NotificationService.Send`, `ConfigManager.Get` |
 
 ## 2. กฎธุรกิจที่พอร์ตมา

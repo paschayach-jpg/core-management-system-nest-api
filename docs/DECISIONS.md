@@ -63,6 +63,7 @@
 | X-06 | **ผู้ใช้ใหม่** | สร้างเองเป็น Officer / OrgUnit 1 (ฮาร์ดโค้ด) | ยังสร้างอัตโนมัติ (`AUTH_AUTO_PROVISION`, `AUTH_DEFAULT_ORG_UNIT_ID` ตั้งได้) | C19 |
 | X-07 | **แจ้งเตือน** | โค้ดเดิมมีแต่ INSERT (SP อ่าน/mark-read ไม่มีผู้เรียก) | เพิ่ม inbox: list/unread-count/mark-read (ตรวจเจ้าของ) · **ตารางไม่มี index** ดู RECOMMENDATIONS D-01 | B2 |
 | X-08 | **ค่าตั้งระบบ** | `ConfigManager` อ่านทั้ง app.config และ `dbo.SystemConfig` | อ่าน `dbo.SystemConfig` (cache) · env ใช้กับ infra เท่านั้น · endpoint list ปกปิดค่าของ key ที่ดูเป็นความลับ | 05-cross-cutting §6 |
+| X-10 | **audit ตาม workflow instance** | `GetWorkflowAuditLogs` ไม่ตรวจสิทธิ์ (เชื่อว่า UI กรองแล้ว) | จำกัดเป็น Manager+; ผู้ใช้ทั่วไปอ่านผ่าน `GET /wfe/instances/:id/history` ซึ่งตรวจสิทธิ์ดู instance | `shared/audit`, `wfe` |
 | X-09 | **แกนผู้ใช้** | `UserAdminController` ไม่เช็ก role (C15) | ทุก endpoint เขียนผู้ใช้ = Admin · ปิดบัญชีตัวเองไม่ได้ | C15 |
 
 > การตัดสินใจ/ข้อแตกต่างของ DMS, KMS, RGP, WFE ดูในเอกสาร module ของแต่ละส่วน
