@@ -346,6 +346,23 @@ export class FakeInstanceStore {
     return 1;
   }
 
+  async taskSlaRows(_m: unknown, userName: string, since: Date) {
+    return this.db.stepInstances
+      .filter((s) => sameUser(s.assignedTo, userName))
+      .filter((s) => {
+        const inst = this.db.instances.find((i) => i.wfInstanceId === s.wfInstanceId);
+        const open = [1, 2, 5].includes(s.status) && [0, 1, 2].includes(inst?.status ?? -1);
+        const doneToday = s.status === 3 && !!s.completedDate && s.completedDate >= since;
+        return open || doneToday;
+      })
+      .map((s) => ({
+        status: s.status,
+        assignedDate: s.assignedDate,
+        slaDeadline: s.slaDeadline,
+        completedDate: s.completedDate,
+      }));
+  }
+
   async myTasks(
     _m: unknown,
     o: { userName: string; onlyOpen: boolean; page: number; pageSize: number },
@@ -425,7 +442,7 @@ export interface SpCallRecord {
 export class FakeSp {
   calls: SpCallRecord[] = [];
   /** ชื่อ SP → error ที่จะโยนในการเรียกครั้งที่ n (นับจาก 1) */
-  failures = new Map<string, { onCall: number; error: Error }>();
+  failures: { spName: string; onCall: number; error: Error }[] = [];
   private counts = new Map<string, number>();
   reportRows: Record<string, Row[]> = {};
 
@@ -436,7 +453,7 @@ export class FakeSp {
 
   /** ให้การเรียกครั้งที่ n นับจาก "ตอนนี้" (ค่าเริ่มต้น 1 = ครั้งถัดไป) โยน error */
   failOn(spName: string, error: Error, nthFromNow = 1) {
-    this.failures.set(spName, { onCall: (this.counts.get(spName) ?? 0) + nthFromNow, error });
+    this.failures.push({ spName, onCall: (this.counts.get(spName) ?? 0) + nthFromNow, error });
   }
 
   call(def: { name: string }, options: unknown = {}) {
@@ -445,8 +462,8 @@ export class FakeSp {
       this.trace.push(`sp:${def.name}`);
       const n = (this.counts.get(def.name) ?? 0) + 1;
       this.counts.set(def.name, n);
-      const f = this.failures.get(def.name);
-      if (f && f.onCall === n) throw f.error;
+      const f = this.failures.find((x) => x.spName === def.name && x.onCall === n);
+      if (f) throw f.error;
       return this.exec(def.name, input);
     };
     return {

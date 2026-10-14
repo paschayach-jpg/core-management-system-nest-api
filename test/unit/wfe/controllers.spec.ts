@@ -73,7 +73,7 @@ const MATRIX: Record<string, Record<string, AppRole>> = {
     cancel: O,
     remove: M,
   },
-  WorkflowTasksController: { mine: O },
+  WorkflowTasksController: { mine: O, summary: O },
   WorkflowStepInstancesController: { get: O, start: O, complete: O, reject: O },
   WorkflowDelegationsController: {
     mine: O,

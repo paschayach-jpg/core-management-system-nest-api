@@ -124,12 +124,25 @@ export class WorkflowTemplatesService extends CrudLoggedService {
                 : 'Template ที่ยกเลิกเวอร์ชัน (Deprecated) แล้วแก้ไขไม่ได้',
               'TEMPLATE_NOT_EDITABLE',
             );
+          // ส่ง definition เดิมกลับมา (designer กด Save ซ้ำ) ถือว่าไม่ได้แก้ผัง
+          const definitionChanged =
+            dto.templateDefinition !== undefined &&
+            dto.templateDefinition !== (def.templateDefinition ?? '');
+          if (definitionChanged && status !== WorkflowTemplateStatus.Draft) {
+            // engine รันจากแถว s_WFStep/s_WFConnection (สร้างครั้งเดียว) — ถ้ามีแถวแล้วแก้ JSON จะไม่มีผลกับ instance
+            // แต่หน้าจอจะเข้าใจว่าแก้แล้ว (ระบบเดิมเงียบ) → API ปฏิเสธให้ชัดเจน
+            if ((await this.store.findSteps(manager, id)).length > 0)
+              throw new BusinessException(
+                'Template นี้มีขั้นตอนที่ใช้งานแล้ว แก้ผัง (TemplateDefinition) ไม่ได้ — ให้คัดลอกเป็น Draft ใหม่แล้วแก้ที่ฉบับคัดลอก',
+                'TEMPLATE_STRUCTURE_LOCKED',
+              );
+          }
+
           const patch: Partial<WfDefinition> = {};
           if (dto.name !== undefined) patch.wfName = dto.name;
           if (dto.description !== undefined) patch.wfDescription = dto.description;
           if (dto.category !== undefined) patch.category = dto.category;
-          if (dto.templateDefinition !== undefined)
-            patch.templateDefinition = dto.templateDefinition;
+          if (definitionChanged) patch.templateDefinition = dto.templateDefinition;
           if (Object.keys(patch).length === 0)
             throw new BusinessException('ไม่มีข้อมูลที่ต้องแก้ไข', 'NO_CHANGES');
 
@@ -148,7 +161,7 @@ export class WorkflowTemplatesService extends CrudLoggedService {
 
           // Draft ไม่มี instance → ผังใน s_WFStep/s_WFConnection ต้องตรงกับ definition ที่เพิ่งบันทึก
           // (Active/Inactive มี instance อ้างอิงแถวเดิมอยู่ จึงไม่แตะ — ดู docs/modules/wfe.md)
-          if (dto.templateDefinition !== undefined && status === WorkflowTemplateStatus.Draft) {
+          if (definitionChanged && status === WorkflowTemplateStatus.Draft) {
             const updated = await this.require(manager, id);
             await this.structure.materializeFromDefinition(manager, updated, true);
           }

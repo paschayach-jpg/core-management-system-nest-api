@@ -20,6 +20,7 @@ import {
 import { AppRole } from '../../../common/constants/enums';
 import { CurrentUser, MinRole } from '../../../common/decorators/auth.decorators';
 import { Paginated } from '../../../common/dto/pagination.dto';
+import { ApiPaginatedResponse } from '../../../common/dto/paginated-response';
 import type { UserContext } from '../../../common/interfaces/user-context';
 import {
   CancelInstanceDto,
@@ -35,6 +36,7 @@ import {
   RejectStepDto,
   StepInstanceDto,
   TaskDto,
+  TaskSummaryDto,
 } from './dto/instance.dto';
 import { WorkflowInstancesService } from './instance.service';
 
@@ -52,6 +54,7 @@ export class WorkflowInstancesController {
   @ApiOperation({
     summary: 'รายการ workflow instance (แบ่งหน้า, กรองตามสถานะ/template/ผู้เริ่ม/ช่วงวันที่)',
   })
+  @ApiPaginatedResponse(InstanceSummaryDto)
   list(
     @Query() q: InstanceListQueryDto,
     @CurrentUser() user: UserContext,
@@ -151,8 +154,16 @@ export class WorkflowTasksController {
     summary:
       'งานของฉัน (แบ่งหน้า) — หนึ่งแถวต่อ workflow เลือกขั้นตอนที่ต้องทำก่อน เรียงตามกำหนดส่ง',
   })
+  @ApiPaginatedResponse(TaskDto)
   mine(@Query() q: MyTasksQueryDto, @CurrentUser() user: UserContext): Promise<Paginated<TaskDto>> {
     return this.service.myTasks(q, user);
+  }
+
+  @Get('summary')
+  @ApiOperation({ summary: 'สรุป KPI ของงานฉัน (งานค้าง/ใกล้ครบกำหนด/เลยกำหนด/เสร็จวันนี้/%SLA)' })
+  @ApiOkResponse({ type: TaskSummaryDto })
+  summary(@CurrentUser() user: UserContext): Promise<TaskSummaryDto> {
+    return this.service.taskSummary(user);
   }
 }
 

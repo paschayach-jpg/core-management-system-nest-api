@@ -191,7 +191,17 @@ export class WorkflowSlaService extends CrudLoggedService {
           this.logger.warn(
             'WorkflowAutoRejectOnOverdue เปิดอยู่ แต่ API ยังไม่รองรับการปฏิเสธอัตโนมัติ',
           );
-        await this.refresh({ escalate: true });
+        const result = await this.refresh({ escalate: true });
+        if (result.updated > 0)
+          this.crudLog.record({
+            module: this.logModule,
+            entity: WFE_ENTITY.stepInstance,
+            action: 'UPDATE',
+            operation: WFE_OP.slaRefreshed,
+            success: true,
+            meta: { ...result, trigger: 'cron' },
+            actor: { userName: 'system' },
+          });
       } finally {
         await lock.release();
       }
@@ -203,9 +213,15 @@ export class WorkflowSlaService extends CrudLoggedService {
   }
 
   /** สั่งอัปเดตสถานะ SLA ทันที (Admin) — escalation (แจ้งเตือน/audit) ทำเฉพาะเมื่อเปิด WorkflowEscalationEnabled */
-  async refreshNow(): Promise<SlaRefreshResultDto> {
-    const settings = await loadWfeSettings(this.cfg);
-    return this.refresh({ escalate: settings.escalationEnabled });
+  refreshNow(): Promise<SlaRefreshResultDto> {
+    return this.logged(
+      { action: 'EXECUTE', operation: WFE_OP.slaRefreshed, meta: { trigger: 'manual' } },
+      async () => {
+        const settings = await loadWfeSettings(this.cfg);
+        return this.refresh({ escalate: settings.escalationEnabled });
+      },
+      (r) => ({ meta: { ...r } }),
+    );
   }
 
   /**
@@ -309,12 +325,6 @@ export class WorkflowSlaService extends CrudLoggedService {
       await this.notifier.dispatch(notices);
     }
 
-    if (updated > 0)
-      this.logEvent({
-        action: 'UPDATE',
-        operation: WFE_OP.slaRefreshed,
-        meta: { checked, updated, becameAtRisk, becameOverdue, escalated: opts.escalate },
-      });
     return { checked, updated, becameAtRisk, becameOverdue, escalated: opts.escalate };
   }
 }

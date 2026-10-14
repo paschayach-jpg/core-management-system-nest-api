@@ -810,3 +810,47 @@ describe('WorkflowInstancesService — การมองเห็นและ�
     );
   });
 });
+
+describe('WorkflowInstancesService.taskSummary — KPI งานของฉัน', () => {
+  it('นับงานค้าง/ใกล้ครบกำหนด/เลยกำหนด/เสร็จวันนี้ ด้วย SLA สด และคิด %SLA', async () => {
+    const { w, stepOf } = await startedLinear();
+    await w.instances.completeStep(stepOf('start')!.wfStepInstanceId, {}, alice);
+    // alice: งานที่เสร็จวันนี้ 1 (start) · เพิ่มงานค้างให้ bob 3 ตัว: ในเวลา / ใกล้ครบกำหนด / เลยกำหนด
+    const base = w.db.stepInstances.find((s) => s.assignedTo === 'DOM\\bob')!;
+    const mk = (id: number, assignedAgoH: number, deadlineInH: number) =>
+      w.db.stepInstances.push({
+        ...base,
+        wfStepInstanceId: id,
+        assignedDate: new Date(Date.now() - assignedAgoH * H),
+        slaDeadline: new Date(Date.now() + deadlineInH * H),
+        status: SS.Pending,
+        completedDate: null,
+      });
+    w.db.stepInstances.splice(w.db.stepInstances.indexOf(base), 1);
+    mk(201, 1, 23);
+    mk(202, 20, 4);
+    mk(203, 30, -6);
+
+    const bobSummary = await w.instances.taskSummary(bob);
+    expect(bobSummary).toEqual({
+      openTasks: 3,
+      onTime: 1,
+      atRisk: 1,
+      overdue: 1,
+      completedToday: 0,
+      slaCompliancePercent: 67,
+    });
+    const aliceSummary = await w.instances.taskSummary(alice);
+    expect(aliceSummary).toMatchObject({
+      openTasks: 0,
+      completedToday: 1,
+      slaCompliancePercent: 100,
+    });
+  });
+
+  it('งานของ workflow ที่ถูกระงับไม่นับเป็นงานค้าง', async () => {
+    const { w, id } = await startedLinear();
+    await w.instances.suspend(id, alice);
+    expect((await w.instances.taskSummary(alice)).openTasks).toBe(0);
+  });
+});

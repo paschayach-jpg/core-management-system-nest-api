@@ -121,6 +121,20 @@ export class TaskDto extends StepInstanceDto {
   @ApiProperty({ description: 'จำนวนขั้นตอนทั้งหมดของ template' }) totalSteps: number;
 }
 
+export class TaskSummaryDto {
+  @ApiProperty({
+    description: 'งานที่ยังต้องทำ (Pending/InProgress/Delegated) ของ workflow ที่กำลังดำเนินการ',
+  })
+  openTasks: number;
+  @ApiProperty({ description: 'ในจำนวนนั้น: ยังอยู่ในเวลา' }) onTime: number;
+  @ApiProperty({ description: 'ใกล้ครบกำหนด (ใช้เวลา ≥ WorkflowSLAWarningThresholdPercent)' })
+  atRisk: number;
+  @ApiProperty({ description: 'เลยกำหนดแล้ว' }) overdue: number;
+  @ApiProperty({ description: 'งานที่เสร็จตั้งแต่เที่ยงคืนวันนี้' }) completedToday: number;
+  @ApiProperty({ description: '(openTasks − overdue) ÷ openTasks × 100 · ไม่มีงานค้าง = 100' })
+  slaCompliancePercent: number;
+}
+
 export class CompleteStepResultDto {
   @ApiProperty({ type: StepInstanceDto }) stepInstance: StepInstanceDto;
   @ApiProperty({

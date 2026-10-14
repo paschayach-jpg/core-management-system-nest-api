@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../../common/decorators/auth.decorators';
 import { Paginated } from '../../../common/dto/pagination.dto';
+import { ApiPaginatedResponse } from '../../../common/dto/paginated-response';
 import type { UserContext } from '../../../common/interfaces/user-context';
 import { DelegateTaskDto, DelegationDto, DelegationListQueryDto } from './dto/delegation.dto';
 import { WorkflowDelegationsService } from './delegation.service';
@@ -31,6 +32,7 @@ export class WorkflowDelegationsController {
 
   @Get('mine')
   @ApiOperation({ summary: 'การมอบหมายของฉัน (ที่มอบให้ผู้อื่น / ที่ได้รับมอบ) แบ่งหน้า' })
+  @ApiPaginatedResponse(DelegationDto)
   mine(
     @Query() q: DelegationListQueryDto,
     @CurrentUser() user: UserContext,

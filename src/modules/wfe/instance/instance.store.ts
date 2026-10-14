@@ -294,6 +294,42 @@ export class InstanceStore {
   }
 
   /**
+   * ข้อมูลย่อของงานของผู้ใช้สำหรับสรุป KPI: งานที่ยังต้องทำของ workflow ที่กำลังดำเนินการ + งานที่เสร็จตั้งแต่ `completedSince`
+   * (ผู้เรียกคำนวณสถานะ SLA สดด้วย sla-calculator)
+   */
+  async taskSlaRows(
+    m: EntityManager,
+    userName: string,
+    completedSince: Date,
+  ): Promise<
+    {
+      status: number;
+      assignedDate: Date | null;
+      slaDeadline: Date | null;
+      completedDate: Date | null;
+    }[]
+  > {
+    const rows = (await m.query(
+      `SELECT si.Status, si.AssignedDate, si.SLADeadline, si.CompletedDate
+         FROM WFE.t_WFStepInstance si
+         JOIN WFE.t_WFInstance wi ON wi.WFInstanceId = si.WFInstanceId AND wi.IsDeleted = 0
+        WHERE si.AssignedTo = @0 AND si.IsDeleted = 0
+          AND ((si.Status IN (${OPEN}) AND wi.Status IN (0,1,2))
+               OR (si.Status = 3 AND si.CompletedDate >= @1))`,
+      [userName, completedSince],
+    )) as Record<string, unknown>[];
+    return rows.map((r) => {
+      const c = camelizeKeys<Record<string, unknown>>(r);
+      return {
+        status: Number(c.status),
+        assignedDate: (c.assignedDate as Date | null) ?? null,
+        slaDeadline: (c.slaDeadline as Date | null) ?? null,
+        completedDate: (c.completedDate as Date | null) ?? null,
+      };
+    });
+  }
+
+  /**
    * งานของฉัน (แบ่งหน้า) — พอร์ตจาก GetMyTasks: step ที่ Pending/InProgress/Completed ของผู้ใช้ (เพิ่ม Delegated เพราะระบบเดิมทำให้
    * งานที่ถูกมอบหมายหายจากทุกคน) เหลือหนึ่งแถวต่อ instance โดยเลือกแถวที่ต้องทำก่อน (InProgress > Pending/Delegated > Completed)
    * แล้วเรียงงานที่ยังไม่เสร็จก่อน ตามกำหนดส่ง

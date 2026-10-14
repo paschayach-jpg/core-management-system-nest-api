@@ -21,6 +21,7 @@ import {
 import { AppRole } from '../../../common/constants/enums';
 import { CurrentUser, MinRole } from '../../../common/decorators/auth.decorators';
 import { Paginated } from '../../../common/dto/pagination.dto';
+import { ApiPaginatedResponse } from '../../../common/dto/paginated-response';
 import type { UserContext } from '../../../common/interfaces/user-context';
 import {
   ConnectionDto,
@@ -61,6 +62,7 @@ export class WorkflowTemplatesController {
 
   @Get()
   @ApiOperation({ summary: 'รายการ Template ของ workflow (แบ่งหน้า, กรองตามสถานะ/หมวด/คำค้น)' })
+  @ApiPaginatedResponse(TemplateSummaryDto)
   list(@Query() q: TemplateListQueryDto): Promise<Paginated<TemplateSummaryDto>> {
     return this.service.list(q);
   }

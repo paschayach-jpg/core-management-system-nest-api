@@ -15,9 +15,13 @@ import { CrudLogService } from '../../../core/crud-log/crud-log.service';
 import { CrudLoggedService } from '../../../core/crud-log/crud-logged.service';
 import { Sp } from '../../../database/sp/sp-catalog.generated';
 import { SpExecutor } from '../../../database/sp/sp-executor.service';
-import { TransactionRunner } from '../../../database/transaction-runner.service';
+import {
+  TransactionRunner,
+  type TransactionScope,
+} from '../../../database/transaction-runner.service';
 import { MAX_DELEGATION_DEPTH, WFE_ENTITY, WFE_OP } from '../common/wfe.constants';
 import { isManagerOrAbove, sameUser } from '../common/wfe-access';
+import { withDeadlockRetry } from '../common/wfe-retry';
 import { noticeText, WorkflowNotificationsService } from '../common/wfe-notifications.service';
 import { WfeUserDirectory } from '../common/wfe-user-directory';
 import type { WfDelegation } from '../entities/wf-delegation.entity';
@@ -109,7 +113,7 @@ export class WorkflowDelegationsService extends CrudLoggedService {
         },
       },
       async () => {
-        const made = await this.tx.run(async (scope) => {
+        const made = await this.runTx(async (scope) => {
           const m = scope.manager;
           const si = await this.instances.findStepInstance(m, dto.workflowStepInstanceId, true);
           if (!si) throw new ResourceNotFoundException('Step instance', dto.workflowStepInstanceId);
@@ -228,7 +232,7 @@ export class WorkflowDelegationsService extends CrudLoggedService {
         },
       },
       async () => {
-        const notice = await this.tx.run(async ({ manager: m }) => {
+        const notice = await this.runTx(async ({ manager: m }) => {
           const d = await this.require(m, delegationId);
           if (!d.isActive)
             throw new ConflictBusinessException(
@@ -280,6 +284,11 @@ export class WorkflowDelegationsService extends CrudLoggedService {
       },
       (r) => ({ recordId: r.workflowStepInstanceId, after: { isActive: r.isActive } }),
     );
+  }
+
+  /** transaction เดียว + รันซ้ำเมื่อ deadlock (ดูเหตุผลใน wfe-retry.ts) */
+  private runTx<T>(work: (scope: TransactionScope) => Promise<T>): Promise<T> {
+    return withDeadlockRetry(() => this.tx.run(work));
   }
 
   private assertAllowed(input: DelegationCheckInput): void {

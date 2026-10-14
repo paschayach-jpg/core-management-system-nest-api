@@ -80,16 +80,31 @@ describe('WorkflowSlaService.refresh — อัปเดตสถานะ SLA',
     ]);
   });
 
-  it('escalate=false: ไม่แจ้งเตือน ไม่บันทึก SLAEscalated แต่บันทึกสรุปการอัปเดต', async () => {
+  it('escalate=false: ไม่แจ้งเตือน ไม่บันทึก SLAEscalated', async () => {
     const { w } = await withOpenSteps();
     await w.sla.refresh({ escalate: false });
     expect(w.notifier.sent).toHaveLength(0);
     const evs = await flush(w);
     expect(evs.filter((e) => e.operation === WFE_OP.slaEscalated)).toHaveLength(0);
-    expect(evs.find((e) => e.operation === WFE_OP.slaRefreshed)).toMatchObject({
-      action: 'UPDATE',
-      meta: { checked: 3, updated: 2, becameAtRisk: 1, becameOverdue: 1, escalated: false },
+  });
+
+  it('สั่งอัปเดตทันที (Admin): บันทึก CRUD-log SLAStatusRefreshed พร้อมสรุป; escalation ตามค่า WorkflowEscalationEnabled', async () => {
+    const { w } = await withOpenSteps();
+    const r = await w.sla.refreshNow();
+    expect(r).toMatchObject({ updated: 2, escalated: false });
+    const [ev] = (await flush(w)).filter((e) => e.operation === WFE_OP.slaRefreshed);
+    expect(ev).toMatchObject({
+      action: 'EXECUTE',
+      entity: 'WorkflowStepInstance',
+      success: true,
+      meta: { trigger: 'manual', checked: 3, updated: 2, becameAtRisk: 1, becameOverdue: 1 },
     });
+    expect(w.notifier.sent).toHaveLength(0);
+
+    const { w: w2 } = await withOpenSteps();
+    w2.db.config[WFE_CONFIG_KEY.escalationEnabled] = true;
+    expect((await w2.sla.refreshNow()).escalated).toBe(true);
+    expect(w2.notifier.all.length).toBeGreaterThan(0);
   });
 
   it('escalate=true: เลยกำหนดบันทึก SLAEscalated (ผู้ทำ=system) + แจ้งเตือนผู้รับผิดชอบและผู้เริ่ม; ใกล้ครบกำหนดแจ้งเตือนผู้รับผิดชอบ', async () => {
@@ -170,6 +185,12 @@ describe('WorkflowSlaService.scheduledRefresh — งานเบื้องห
       SlaStatus.Overdue,
     );
     expect((await flush(w)).filter((e) => e.operation === WFE_OP.slaEscalated)).toHaveLength(1);
+    const summary = (await flush(w)).find((e) => e.operation === WFE_OP.slaRefreshed);
+    expect(summary).toMatchObject({
+      action: 'UPDATE',
+      actor: { userName: 'system' },
+      meta: { trigger: 'cron', updated: 2 },
+    });
   });
 
   it('เคารพ WorkflowSLAJobIntervalMinutes: เรียกถี่กว่าช่วงที่ตั้งจะข้าม', async () => {

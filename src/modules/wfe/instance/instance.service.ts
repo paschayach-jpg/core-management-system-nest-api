@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import type { DataSource, EntityManager } from 'typeorm';
 import {
+  SlaStatus,
   WorkflowInstanceStatus as IS,
   WorkflowStepInstanceStatus as SS,
   WorkflowStepType,
@@ -37,6 +38,7 @@ import {
   WorkflowNotificationsService,
   type WfeNotice,
 } from '../common/wfe-notifications.service';
+import { withDeadlockRetry } from '../common/wfe-retry';
 import { loadWfeSettings } from '../common/wfe-settings';
 import { WfeUserDirectory } from '../common/wfe-user-directory';
 import type { WfConnection } from '../entities/wf-connection.entity';
@@ -59,6 +61,7 @@ import type {
   RejectStepDto,
   StepInstanceDto,
   TaskDto,
+  TaskSummaryDto,
 } from './dto/instance.dto';
 import {
   canDeleteInstance,
@@ -190,6 +193,36 @@ export class WorkflowInstancesService extends CrudLoggedService {
     );
   }
 
+  /** สรุป KPI ของงานฉัน (ใช้แทนการดึงทุกหน้ามานับเอง) — SLA คำนวณสด */
+  async taskSummary(user: UserContext): Promise<TaskSummaryDto> {
+    const settings = await loadWfeSettings(this.cfg);
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const rows = await this.store.taskSlaRows(this.ds.manager, user.adUserName, startOfDay);
+    let open = 0;
+    let atRisk = 0;
+    let overdue = 0;
+    let completedToday = 0;
+    for (const r of rows) {
+      if (r.status === SS.Completed) {
+        completedToday++;
+        continue;
+      }
+      open++;
+      const s = evaluateSlaStatus(r, now, settings.slaWarningThresholdPercent);
+      if (s === SlaStatus.Overdue) overdue++;
+      else if (s === SlaStatus.AtRisk) atRisk++;
+    }
+    return {
+      openTasks: open,
+      onTime: open - atRisk - overdue,
+      atRisk,
+      overdue,
+      completedToday,
+      slaCompliancePercent: open === 0 ? 100 : Math.round(((open - overdue) / open) * 100),
+    };
+  }
+
   async getStepInstance(id: number, user: UserContext): Promise<StepInstanceDto> {
     const si = await this.requireStepInstance(this.ds.manager, id);
     const inst = await this.requireInstance(this.ds.manager, si.wfInstanceId);
@@ -216,7 +249,7 @@ export class WorkflowInstancesService extends CrudLoggedService {
       async () => {
         const settings = await loadWfeSettings(this.cfg);
         const now = new Date();
-        const made = await this.tx.run(async (scope) => {
+        const made = await this.runTx(async (scope) => {
           const m = scope.manager;
           // 1) template ต้องมีและ Active
           const def = await this.templates.findDefinition(m, dto.workflowDefinitionId);
@@ -327,7 +360,7 @@ export class WorkflowInstancesService extends CrudLoggedService {
         captureBefore: () => this.beforeInstance(id),
       },
       () =>
-        this.tx.run(async ({ manager: m }) => {
+        this.runTx(async ({ manager: m }) => {
           if (!isManagerOrAbove(user))
             throw new PermissionDeniedException(
               'เฉพาะผู้จัดการขึ้นไปเท่านั้นที่ลบ workflow ได้',
@@ -358,7 +391,7 @@ export class WorkflowInstancesService extends CrudLoggedService {
         captureBefore: () => this.beforeStep(stepInstanceId),
       },
       async () => {
-        await this.tx.run(async ({ manager: m }) => {
+        await this.runTx(async ({ manager: m }) => {
           const si = await this.requireStepInstance(m, stepInstanceId, true);
           this.assertAssignee(si, user);
           if (!canStartStep(si.status))
@@ -393,7 +426,7 @@ export class WorkflowInstancesService extends CrudLoggedService {
       },
       async () => {
         const settings = await loadWfeSettings(this.cfg);
-        const done = await this.tx.run(async (scope) => {
+        const done = await this.runTx(async (scope) => {
           const m = scope.manager;
           const now = new Date();
           const si = await this.requireStepInstance(m, stepInstanceId, true);
@@ -557,7 +590,7 @@ export class WorkflowInstancesService extends CrudLoggedService {
         captureBefore: () => this.beforeStep(stepInstanceId),
       },
       async () => {
-        const notices = await this.tx.run(async ({ manager: m }) => {
+        const notices = await this.runTx(async ({ manager: m }) => {
           const now = new Date();
           const si = await this.requireStepInstance(m, stepInstanceId, true);
           this.assertAssignee(si, user);
@@ -627,7 +660,7 @@ export class WorkflowInstancesService extends CrudLoggedService {
         captureBefore: () => this.beforeInstance(id),
       },
       async () => {
-        await this.tx.run(async ({ manager: m }) => {
+        await this.runTx(async ({ manager: m }) => {
           const inst = await this.requireInstance(m, id, true);
           if (!canControlInstance(user, inst.initiatedBy))
             throw new PermissionDeniedException(
@@ -661,6 +694,11 @@ export class WorkflowInstancesService extends CrudLoggedService {
       },
       (r) => ({ after: { status: r.status } }),
     );
+  }
+
+  /** transaction เดียว + รันซ้ำเมื่อ deadlock (ดูเหตุผลใน wfe-retry.ts) */
+  private runTx<T>(work: (scope: TransactionScope) => Promise<T>): Promise<T> {
+    return withDeadlockRetry(() => this.tx.run(work));
   }
 
   /** ปิด step instance ที่ยังเปิดอยู่ทั้งหมดของ instance (สถานะ Rejected + ข้อความ) ยกเว้น `exceptId` */

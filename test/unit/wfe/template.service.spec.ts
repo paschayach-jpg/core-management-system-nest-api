@@ -154,11 +154,43 @@ describe('WorkflowTemplatesService — สร้าง/แก้/ลบ', () => 
     expect(w.db.steps.filter((s) => oldIds.includes(s.wfStepId)).every((s) => s.isDeleted)).toBe(
       true,
     );
+  });
 
-    const active = seedLinear(w.db);
+  it('Active/Inactive ที่มีแถว step แล้ว: แก้ผัง (TemplateDefinition) ไม่ได้ (422) แต่แก้ชื่อ/คำอธิบายได้; ส่ง definition เดิมซ้ำไม่ถือว่าแก้ผัง', async () => {
+    const w = makeWfe();
+    const active = seedLinear(w.db, { templateDefinition: LINEAR_JSON });
     const before = JSON.stringify(w.db.steps);
-    await w.templates.update(active.defId, { templateDefinition: next }, boss);
+    const other = designerJson([{ WorkflowStepId: 1, StepName: 'x', StepType: 'Start' }], []);
+
+    const e = await rejection(
+      w.templates.update(active.defId, { templateDefinition: other }, boss),
+    );
+    expect(code(e)).toBe('TEMPLATE_STRUCTURE_LOCKED');
     expect(JSON.stringify(w.db.steps)).toBe(before);
+    expect(w.db.defs[0].version).toBe(3); // ไม่ถูกเพิ่ม Version เมื่อล้มเหลว
+
+    const renamed = await w.templates.update(
+      active.defId,
+      { name: 'ชื่อใหม่', templateDefinition: LINEAR_JSON },
+      boss,
+    );
+    expect(renamed).toMatchObject({ name: 'ชื่อใหม่', version: 4 });
+    expect(JSON.stringify(w.db.steps)).toBe(before);
+  });
+
+  it('Active ที่ยังไม่มีแถว step เลย (ผังอยู่ใน JSON อย่างเดียวแบบระบบเดิม) ยังแก้ผังได้ — instance แรกจะสร้างแถวจาก JSON ล่าสุด', async () => {
+    const w = makeWfe();
+    const active = seedTemplate(w.db, [], null, { templateDefinition: LINEAR_JSON });
+    const next = designerJson(
+      [
+        { WorkflowStepId: 1, StepName: 'เริ่ม', StepType: 'Start' },
+        { WorkflowStepId: 2, StepName: 'จบ', StepType: 'End' },
+      ],
+      [{ FromStepId: 1, ToStepId: 2 }],
+    );
+    await w.templates.update(active.defId, { templateDefinition: next }, boss);
+    expect(w.db.steps).toHaveLength(0);
+    expect(w.db.defs[0].templateDefinition).toBe(next);
   });
 
   describe('ลบ template', () => {
