@@ -95,9 +95,10 @@ export class TemplateStore {
       );
     }
 
-    const sortCol =
-      f.sortBy && Object.hasOwn(TEMPLATE_SORT, f.sortBy) ? TEMPLATE_SORT[f.sortBy] : 'd.WFName';
-    const dir = f.sortDir === 'desc' ? 'DESC' : 'ASC';
+    // sortBy ที่ไม่อยู่ใน whitelist ถือว่าไม่ได้เลือกเรียง → เรียงตามชื่อ (ก-ฮ) ตามค่าเริ่มต้นของระบบเดิม
+    const custom = !!f.sortBy && Object.hasOwn(TEMPLATE_SORT, f.sortBy);
+    const sortCol = custom ? TEMPLATE_SORT[f.sortBy as string] : 'd.WFName';
+    const dir = custom && f.sortDir === 'desc' ? 'DESC' : 'ASC';
     const offset = p((f.page - 1) * f.pageSize);
     const take = p(f.pageSize);
 

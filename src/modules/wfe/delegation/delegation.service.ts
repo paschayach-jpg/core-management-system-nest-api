@@ -287,7 +287,7 @@ export class WorkflowDelegationsService extends CrudLoggedService {
     if (!v) return;
     // ไม่ใช่ผู้รับผิดชอบ = 403 · ที่เหลือเป็นการละเมิดกฎ = 422
     if (v.code === 'NOT_ASSIGNEE') throw new PermissionDeniedException(v.message, 'NOT_ASSIGNEE');
-    throw new BusinessException(v.message, `DELEGATION_${v.code}`, { rule: v.code });
+    throw new BusinessException(v.message, v.code, { rule: v.code });
   }
 
   /** ประวัติของ step instance จาก sp_WF_GetDelegationHistory (เฉพาะ IsDeleted = 0 เรียงตามระดับ) */

@@ -19,7 +19,7 @@ const bool = ({ value }: { value: unknown }) =>
     ? true
     : value === 'false' || value === '0' || value === false
       ? false
-      : undefined;
+      : value; // ค่าที่ไม่รู้จักปล่อยผ่านให้ @IsBoolean ปฏิเสธ (400) แทนที่จะเงียบหาย
 
 export class DelegationDto {
   @ApiProperty() wfDelegationId: number;

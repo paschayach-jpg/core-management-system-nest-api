@@ -26,7 +26,7 @@ const bool = ({ value }: { value: unknown }) =>
     ? true
     : value === 'false' || value === '0' || value === false
       ? false
-      : undefined;
+      : value; // ค่าที่ไม่รู้จักปล่อยผ่านให้ @IsBoolean ปฏิเสธ (400) แทนที่จะเงียบหาย
 
 const INSTANCE_STATUS_DESC =
   '1=Created, 2=InProgress, 3=Completed, 4=Rejected, 5=Suspended, 6=Cancelled (0 = ค่าที่ SP ใส่ตอนสร้าง ซึ่งค้างจากระบบเดิม)';

@@ -215,11 +215,10 @@ export class InstanceStore {
       );
     }
 
-    const sortCol =
-      f.sortBy && Object.hasOwn(INSTANCE_SORT, f.sortBy)
-        ? INSTANCE_SORT[f.sortBy]
-        : 'wi.InitiatedDate';
-    const dir = f.sortBy ? (f.sortDir === 'desc' ? 'DESC' : 'ASC') : 'DESC';
+    // sortBy ที่ไม่อยู่ใน whitelist ถือว่าไม่ได้เลือกเรียง → ค่าเริ่มต้น "ใหม่สุดก่อน"
+    const custom = !!f.sortBy && Object.hasOwn(INSTANCE_SORT, f.sortBy);
+    const sortCol = custom ? INSTANCE_SORT[f.sortBy as string] : 'wi.InitiatedDate';
+    const dir = custom ? (f.sortDir === 'desc' ? 'DESC' : 'ASC') : 'DESC';
     const offset = p((f.page - 1) * f.pageSize);
     const take = p(f.pageSize);
 

@@ -21,7 +21,7 @@ const bool = ({ value }: { value: unknown }) =>
     ? true
     : value === 'false' || value === '0' || value === false
       ? false
-      : undefined;
+      : value; // ค่าที่ไม่รู้จักปล่อยผ่านให้ @IsBoolean ปฏิเสธ (400) แทนที่จะเงียบหาย
 
 const STATUS_DESC = '0=Draft, 1=PendingApproval, 2=Active, 3=Inactive, 4=Deprecated';
 const STEP_TYPE_DESC =
