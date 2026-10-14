@@ -1,0 +1,81 @@
+﻿EMS,m_Employee,CK_mEmployee_Type,([EmploymentType]=(4) OR [EmploymentType]=(3) OR [EmploymentType]=(2) OR [EmploymentType]=(1)),NULL
+EMS,m_Employee,CK_mEmployee_Resign,([ResignDate] IS NULL OR [ResignDate]>=[JoinDate]),NULL
+EMS,m_Employee,CK_mEmployee_Status,([EmploymentStatus]=(5) OR [EmploymentStatus]=(4) OR [EmploymentStatus]=(3) OR [EmploymentStatus]=(2) OR [EmploymentStatus]=(1)),NULL
+KMS,m_KBCategory,CK_KMS_KBCat_ImportTypeDigit,([ImportTypeDigit] IS NULL OR [ImportTypeDigit] like '[1-9]'),NULL
+KMS,t_KBArticle,CK_KMS_Art_Status,([Status]=(4) OR [Status]=(3) OR [Status]=(2) OR [Status]=(1)),NULL
+KMS,t_KBArticle,CK_KMS_Art_Type,([ArticleType]=(5) OR [ArticleType]=(4) OR [ArticleType]=(3) OR [ArticleType]=(2) OR [ArticleType]=(1)),NULL
+KMS,t_KBArticleLink,CK_KMS_ArtLink_EType,([EntityType]=(6) OR [EntityType]=(5) OR [EntityType]=(4) OR [EntityType]=(3) OR [EntityType]=(2) OR [EntityType]=(1)),NULL
+audit,AuditLog,CK_aud_AuditLog_Action,"(len(ltrim(rtrim(isnull([Action],''))))>(0))",NULL
+dms,FolderQuotaChangeRequest,CHK_FolderQuotaChangeRequest_Status,([Status]=(4) OR [Status]=(3) OR [Status]=(2) OR [Status]=(1)),NULL
+security,FolderPermission,CK_sec_FolderPerm_PrincipalType,([PrincipalType]=(4) OR [PrincipalType]=(3) OR [PrincipalType]=(2) OR [PrincipalType]=(1)),NULL
+storage,ExternalShare,CK_ExternalShare_FileOrFolder,([FileID] IS NOT NULL AND [FolderID] IS NULL OR [FileID] IS NULL AND [FolderID] IS NOT NULL),NULL
+storage,ExternalShare,CK_ExternalShare_Status,([ShareTokenStatus]='Revoked' OR [ShareTokenStatus]='Disabled' OR [ShareTokenStatus]='Expired' OR [ShareTokenStatus]='Active' OR [ShareTokenStatus]='Pending'),NULL
+storage,FileDocument,CK_sto_FileDocument_Status,([FileStatus]=(3) OR [FileStatus]=(2) OR [FileStatus]=(1)),NULL
+storage,FileDocument,CK_sto_FileDocument_VirusScan,([VirusScanStatus]=(3) OR [VirusScanStatus]=(2) OR [VirusScanStatus]=(1) OR [VirusScanStatus]=(0)),NULL
+storage,Folder,CK_sto_Folder_ConfLevel,([ConfidentialityLevel]=(4) OR [ConfidentialityLevel]=(3) OR [ConfidentialityLevel]=(2) OR [ConfidentialityLevel]=(1)),NULL
+storage,Folder,CK_sto_Folder_Depth,([FolderDepth]>=(0) AND [FolderDepth]<=(10)),NULL
+storage,FolderTemplate,CK_sto_FolderTemplate_Type,([TargetType]='Any' OR [TargetType]='Department' OR [TargetType]='Division' OR [TargetType]='SubCommittee'),NULL
+storage,FolderTemplateItem,CK_sto_FTplItem_ConfLevel,([ConfidentialityLevel]=(4) OR [ConfidentialityLevel]=(3) OR [ConfidentialityLevel]=(2) OR [ConfidentialityLevel]=(1)),NULL
+storage,ShareAccessLog,CK_ShareAccessLog_AccessType,([AccessType]='Download' OR [AccessType]='View'),NULL
+storage,ShareToken,CK_ShareToken_Status,([Status]='Revoked' OR [Status]='Disabled' OR [Status]='Expired' OR [Status]='Active' OR [Status]='Pending'),NULL
+workflow,ApprovalRequest,CK_wf_ApprovalRequest_Status,([RequestStatus]=(5) OR [RequestStatus]=(4) OR [RequestStatus]=(3) OR [RequestStatus]=(2) OR [RequestStatus]=(1)),NULL
+workflow,ApprovalRequest,CK_wf_ApprovalRequest_Type,([RequestType]='SHARE_PERMISSION_CHANGE' OR [RequestType]='INTERNAL_SHARE' OR [RequestType]='DOWNLOAD_FILE' OR [RequestType]='EXTERNAL_SHARE' OR [RequestType]='UPLOAD_HC' OR [RequestType]='CHANGE_PERMISSION' OR [RequestType]='DELETE_FOLDER' OR [RequestType]='CREATE_HC'),NULL
+workflow,ApprovalStep,CK_wf_ApprovalStep_Status,([StepStatus]=(4) OR [StepStatus]=(3) OR [StepStatus]=(2) OR [StepStatus]=(1)),NULL
+workflow,ApprovalRequest,ROWS,NULL,40
+workflow,ApprovalStep,ROWS,NULL,222519
+audit,AuditLog,ROWS,NULL,251485
+storage,ExternalShare,ROWS,NULL,4
+storage,FileDocument,ROWS,NULL,2812
+security,FilePermission,ROWS,NULL,59
+storage,Folder,ROWS,NULL,411
+EMS,FolderAuthorityConfig,ROWS,NULL,752
+security,FolderPermission,ROWS,NULL,6
+dms,FolderQuotaChangeRequest,ROWS,NULL,4
+storage,FolderTemplate,ROWS,NULL,4
+storage,FolderTemplateItem,ROWS,NULL,8
+EMS,m_Department,ROWS,NULL,47
+EMS,m_Division,ROWS,NULL,13
+EMS,m_Employee,ROWS,NULL,225
+KMS,m_KBArticleDisplayProfile,ROWS,NULL,5
+KMS,m_KBArticleDisplayProfileColumn,ROWS,NULL,35
+KMS,m_KBCategory,ROWS,NULL,94
+KMS,m_KBImportTemplate,ROWS,NULL,4
+KMS,m_KBImportTemplateColumn,ROWS,NULL,40
+EMS,m_Position,ROWS,NULL,8
+EMS,m_PositionMapping,ROWS,NULL,154
+RGP,m_project_member_role,ROWS,NULL,19
+RGP,m_project_template,ROWS,NULL,7
+EMS,m_Role,ROWS,NULL,132
+EMS,m_SubCommittee,ROWS,NULL,30
+RGP,m_template_doc,ROWS,NULL,10
+RGP,m_template_state,ROWS,NULL,42
+EMS,MenuItem,ROWS,NULL,54
+EMS,Notification,ROWS,NULL,525748
+EMS,OrgUnit,ROWS,NULL,242
+EMS,OrgUnitRelationship,ROWS,NULL,3
+WFE,s_WFConnection,ROWS,NULL,22
+WFE,s_WFDefinition,ROWS,NULL,17
+WFE,s_WFStep,ROWS,NULL,26
+storage,ShareAccessLog,ROWS,NULL,0
+storage,ShareToken,ROWS,NULL,4
+KMS,t_KBArticle,ROWS,NULL,19080
+KMS,t_KBArticleAttachment,ROWS,NULL,17804
+KMS,t_KBArticleLink,ROWS,NULL,24616
+KMS,t_KBVersion,ROWS,NULL,18240
+RGP,t_project,ROWS,NULL,29
+storage,t_project_attachment,ROWS,NULL,7
+RGP,t_project_audit_log,ROWS,NULL,111
+RGP,t_project_doc_workflow,ROWS,NULL,52
+RGP,t_project_member,ROWS,NULL,62
+RGP,t_project_notify_log,ROWS,NULL,10
+RGP,t_project_progress,ROWS,NULL,218
+RGP,t_project_state,ROWS,NULL,183
+RGP,t_project_state_member,ROWS,NULL,39
+RGP,t_project_task,ROWS,NULL,33
+RGP,t_project_task_comment,ROWS,NULL,21
+RGP,t_project_task_status_log,ROWS,NULL,8
+WFE,t_WFInstance,ROWS,NULL,96
+WFE,t_WFStepInstance,ROWS,NULL,168
+EMS,UserAccount,ROWS,NULL,315
+security,UserOrgVisibility,ROWS,NULL,254
+dbo,WFDelegation,ROWS,NULL,0
