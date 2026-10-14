@@ -345,13 +345,20 @@ export class QuotaService extends CrudLoggedService {
               'QUOTA_REQUEST_NOT_PENDING',
             );
           }
-          await this.store.setQuota(
+          const applied = await this.store.setQuota(
             t,
             org.unitType,
             org.unitId,
             found.requestedQuotaBytes,
             user.adUserName,
           );
+          if (!applied) {
+            // UPDATE ไม่เจอแถว (เช่น หน่วยงานหลักถูกปิดระหว่างนี้) → ยกเลิกทั้งก้อน ไม่ปล่อยให้คำขอเป็น Approved โดยไม่มีผล
+            throw new BusinessException(
+              'ตั้งโควตาของหน่วยงานหลักไม่สำเร็จ',
+              'QUOTA_UNIT_NOT_FOUND',
+            );
+          }
         });
         await this.notifications.send({
           recipientUserId: req.requestedBy,
