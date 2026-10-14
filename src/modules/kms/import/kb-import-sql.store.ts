@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import type { DataSource, EntityManager } from 'typeorm';
+import type { DataSource } from 'typeorm';
 import { camelizeKeys } from '../../../common/utils/camelize';
 import { TransactionRunner } from '../../../database/transaction-runner.service';
 import {
@@ -8,7 +8,9 @@ import {
   buildArticleUpdate,
   shouldCreateVersion,
 } from '../articles/article-columns';
+import { LINK_FILE, attachFileRow, ensureLink, linkLawBothWays } from '../articles/article-sql';
 import { KbCategoryRow, toCategoryRow } from '../codes/kb-category-tree';
+import { chunkArray } from '../kms-sql';
 import {
   ExistingArticleInfo,
   ExistingArticleResult,
@@ -17,17 +19,6 @@ import {
   NewArticleResult,
   NewArticleWrite,
 } from './kb-import.store';
-
-const LINK_FILE = 1; // KMS.t_KBArticleLink.EntityType: 1 = Folder/File
-const LINK_LAW = 4; // 4 = Law (บทความที่เกี่ยวข้อง)
-const IN_CHUNK = 1000;
-
-/** SQL Server จำกัด 2100 parameter ต่อคำสั่ง — แบ่งชุดเมื่อใช้ IN (...) */
-export function chunkArray<T>(items: readonly T[], size = IN_CHUNK): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
-  return out;
-}
 
 /**
  * Import store ของจริง (SQL Server): ทุกการเขียนต่อบทความอยู่ใน transaction เดียว
@@ -129,15 +120,12 @@ export class SqlKbImportStore extends KbImportStore {
         );
       }
 
-      const parentLinksInserted = await this.linkParents(
-        manager,
-        articleId,
-        input.parentArticleIds,
-        input.createdBy,
-      );
+      let parentLinksInserted = 0;
+      for (const parentId of input.parentArticleIds)
+        parentLinksInserted += await linkLawBothWays(manager, articleId, parentId, input.createdBy);
 
       if (input.fileId !== null)
-        await this.attachFile(manager, articleId, input.fileId, input.createdBy);
+        await attachFileRow(manager, articleId, input.fileId, input.createdBy);
 
       return { articleId, parentLinksInserted };
     });
@@ -197,13 +185,7 @@ export class SqlKbImportStore extends KbImportStore {
         );
         for (const f of files) {
           if (
-            await this.ensureLink(
-              manager,
-              input.articleId,
-              LINK_FILE,
-              String(f.FileID),
-              input.createdBy,
-            )
+            await ensureLink(manager, input.articleId, LINK_FILE, String(f.FileID), input.createdBy)
           )
             fileLinksRepaired++;
         }
@@ -211,16 +193,18 @@ export class SqlKbImportStore extends KbImportStore {
 
       let attached = false;
       if (input.attachFileId !== null) {
-        await this.attachFile(manager, input.articleId, input.attachFileId, input.createdBy);
+        await attachFileRow(manager, input.articleId, input.attachFileId, input.createdBy);
         attached = true;
       }
 
-      const parentLinksInserted = await this.linkParents(
-        manager,
-        input.articleId,
-        input.parentArticleIds,
-        input.createdBy,
-      );
+      let parentLinksInserted = 0;
+      for (const parentId of input.parentArticleIds)
+        parentLinksInserted += await linkLawBothWays(
+          manager,
+          input.articleId,
+          parentId,
+          input.createdBy,
+        );
 
       return {
         versionCreated: nextVersion !== null,
@@ -229,57 +213,5 @@ export class SqlKbImportStore extends KbImportStore {
         attached,
       };
     });
-  }
-
-  /** link มาตราแม่ไป-กลับ (EntityType=4) · ตรวจ Exists ทุกทิศ จึงเรียกซ้ำได้ไม่เกิด link ซ้ำ · คืนจำนวน link ที่เพิ่มจริง */
-  private async linkParents(
-    manager: EntityManager,
-    articleId: number,
-    parentIds: number[],
-    createdBy: string,
-  ): Promise<number> {
-    let inserted = 0;
-    for (const parentId of parentIds) {
-      if (parentId <= 0 || parentId === articleId) continue;
-      if (await this.ensureLink(manager, articleId, LINK_LAW, String(parentId), createdBy))
-        inserted++;
-      if (await this.ensureLink(manager, parentId, LINK_LAW, String(articleId), createdBy))
-        inserted++;
-    }
-    return inserted;
-  }
-
-  /** ผูกไฟล์: t_KBArticleAttachment + link (EntityType=1, EntityID=FileID) — เหมือน SaveArticleAttachments แต่ไม่ลบของเดิม */
-  private async attachFile(
-    manager: EntityManager,
-    articleId: number,
-    fileId: number,
-    createdBy: string,
-  ): Promise<void> {
-    await manager.query(
-      `INSERT INTO KMS.t_KBArticleAttachment (ArticleID, FileID, CreatedBy, CreatedDate) VALUES (@0, @1, @2, GETDATE())`,
-      [articleId, fileId, createdBy],
-    );
-    await this.ensureLink(manager, articleId, LINK_FILE, String(fileId), createdBy);
-  }
-
-  private async ensureLink(
-    manager: EntityManager,
-    articleId: number,
-    entityType: number,
-    entityId: string,
-    createdBy: string,
-  ): Promise<boolean> {
-    const rows: { Inserted: number }[] = await manager.query(
-      `IF NOT EXISTS (SELECT 1 FROM KMS.t_KBArticleLink WHERE ArticleID = @0 AND EntityType = @1 AND EntityID = @2)
-       BEGIN
-         INSERT INTO KMS.t_KBArticleLink (ArticleID, EntityType, EntityID, CreatedBy, CreatedDate)
-         VALUES (@0, @1, @2, @3, GETDATE());
-         SELECT 1 AS Inserted;
-       END
-       ELSE SELECT 0 AS Inserted;`,
-      [articleId, entityType, entityId, createdBy],
-    );
-    return Number(rows[0]?.Inserted) === 1;
   }
 }
